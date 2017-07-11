@@ -1,0 +1,7 @@
+[package]
+name = "i3-ws-rename"
+version = "0.1.0"
+authors = ["Daniel Berg <mail@roosta.sh>"]
+
+[dependencies]
+i3ipc = "0.4.2"

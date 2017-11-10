@@ -13,18 +13,20 @@ use i3ipc::I3Connection;
 //       A.3. If more than two, Name multiple or something
 // 3. loop
 fn main() {
-    // establish connection.
-    let mut listener = I3EventListener::connect().unwrap();
-    let mut connection = I3Connection::connect().unwrap();
-
+    let mut listener = I3EventListener::connect().ok().expect("Failed to connect to listener");
+    let mut connection = I3Connection::connect().ok().expect("Failed to connect to i3");
     let subs = [Subscription::Window];
-    listener.subscribe(&subs).unwrap();
+    listener.subscribe(&subs).ok().expect("Failed to subscribe");
 
     // println!("tree: {:#?}", connection.get_tree());
-    // handle them
     for event in listener.listen() {
-        match event.unwrap() {
-            Event::WindowEvent(e) => i3wsr::handle_window_event(e),
+        match event {
+            Ok(Event::WindowEvent(e)) => {
+                if let Err(e) = i3wsr::handle_window_event(e) {
+                    eprintln!("handle_window_event error: {}", e);
+                }
+            },
+            Err(e) => eprintln!("Error: {}", e),
             _ => unreachable!()
         }
     }

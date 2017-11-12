@@ -1,29 +1,33 @@
 extern crate i3ipc;
 use i3ipc::event::WindowEventInfo;
 use i3ipc::event::inner::WindowChange;
-use std::io;
+use std::process::Command;
+use std::str;
 use std::error::Error;
-use std::io::Write;
-
-pub fn handle_window_event(e: WindowEventInfo) -> Result<(), &'static str> {
-
-    let stdin = io::stdin();
-    let mut stdout = io::stdout();
+pub fn handle_window_event(e: WindowEventInfo) -> Result<(), Box<Error>> {
 
     match e.change {
         WindowChange::New => {
-            let percent: f64 = e.container.percent.unwrap_or(1.0);
+            let percent: f64 = e.container.percent.ok_or("Failed to get container size percent")?;
             let name: String = e.container.name.unwrap_or("unnamed".to_owned());
-            let id: i32 = match e.container.window {
-                Some(id) => id,
-                None => return Err("Failed to get a window id"),
-            };
+            let id: i32 = e.container.window.unwrap_or(0);
+            if id != 0 {
+                let output = Command::new("xprop")
+                    .arg("-id")
+                    .arg(id.to_string())
+                    .arg("_NET_WM_WINDOW_TYPE")
+                    .arg("WM_CLASS")
+                    .output()?;
+                let stdout: Vec<&str> = str::from_utf8(&output.stdout)?
+                    .split('\n')
+                    .take(2)
+                    .collect();
+                println!("{:#?}", stdout);
+                // if String::from_utf8_lossy(&output.stdout).contains("_NET_WM_WINDOW_TYPE_NORMAL") {
 
-            // if id != 0 {
-            //     stdin.read_line("xprop -id")
-            // }
-            // println!("{}, {}", name, percent);
-            // println!("{:#?}", e);
+                // }
+            }
+            // println!("{:#?}", e)
         },
         WindowChange::Close => {
             let percent: f64 = e.container.percent.unwrap_or(1.0);

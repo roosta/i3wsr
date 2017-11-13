@@ -25,7 +25,6 @@ fn main() {
             Ok(Event::WindowEvent(e)) => {
                 if let Err(e) = i3wsr::handle_window_event(e) {
                     eprintln!("handle_window_event error: {}", e);
-                    process::exit(1);
                 }
             },
             Err(e) => eprintln!("Error: {}", e),

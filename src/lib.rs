@@ -2,10 +2,11 @@ extern crate i3ipc;
 use i3ipc::event::WindowEventInfo;
 use i3ipc::event::inner::WindowChange;
 use std::process::Command;
+use i3ipc::I3Connection;
 use std::str;
 use std::error::Error;
 
-pub fn handle_window_event(e: WindowEventInfo) -> Result<(), Box<Error>> {
+pub fn handle_window_event(e: WindowEventInfo, connection: &mut I3Connection) -> Result<(), Box<Error>> {
 
     match e.change {
         WindowChange::New => {
@@ -21,18 +22,17 @@ pub fn handle_window_event(e: WindowEventInfo) -> Result<(), Box<Error>> {
 
             if let Ok(stdout) = str::from_utf8(&output.stdout) {
                 if stdout.contains("_NET_WM_WINDOW_TYPE_NORMAL") {
-                    let wm_class_col: Vec<&str> = stdout
+                    let mut wm_class_col: Vec<&str> = stdout
                         .split('\n')
-                        .take(2)
                         .collect();
+                    wm_class_col.pop(); // discard the \n
 
-                    if let Some(wm_class) = wm_class_col.last() {
+                    if let Some(wm_class) = wm_class_col.pop() {
                         let wm_class: Vec<&str> = wm_class.split('"').collect();
-                        let wm_class: &str = wm_class.get(1).unwrap_or(&"unknown");
+                        let wm_class: &str = wm_class[1];
 
                         println!("{:#?}", wm_class);
-                        //     .split('"')
-                        //     .collect();
+                        println!("{:#?}", connection.get_tree()?.nodes)
                     }
 
                 }

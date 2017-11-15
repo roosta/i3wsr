@@ -3,6 +3,10 @@ name = "i3wsr"
 version = "0.1.0"
 authors = ["Daniel Berg <mail@roosta.sh>"]
 
+[dependencies.x11]
+version = "2.16.0"
+features = ["xlib"]
+
 [dependencies.i3ipc]
 version = "0.8.2"
 features = ["i3-4-14"]

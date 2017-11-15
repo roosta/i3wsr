@@ -1,7 +1,7 @@
 extern crate i3ipc;
 extern crate i3wsr;
 use i3ipc::I3EventListener;
-use std::process;
+// use std::process;
 use i3ipc::Subscription;
 use i3ipc::event::Event;
 // use i3ipc::I3Connection;

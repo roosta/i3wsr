@@ -20,6 +20,12 @@ pub fn handle_window_event(e: WindowEventInfo, connection: &mut I3Connection) ->
                 .arg("WM_CLASS")
                 .output()?;
 
+            // 1. get tree
+            // 2. walk tree until we find a workspace
+            // 3. store workspace name,
+            // 4. keep walking the workspace tree trying to match container id
+            // 5. once identified exit walk
+            // 6. rename workspace
             if let Ok(stdout) = str::from_utf8(&output.stdout) {
                 if stdout.contains("_NET_WM_WINDOW_TYPE_NORMAL") {
                     let mut wm_class_col: Vec<&str> = stdout
@@ -29,10 +35,10 @@ pub fn handle_window_event(e: WindowEventInfo, connection: &mut I3Connection) ->
 
                     if let Some(wm_class) = wm_class_col.pop() {
                         let wm_class: Vec<&str> = wm_class.split('"').collect();
-                        let wm_class: &str = wm_class[1];
+                        let wm_class: &str = wm_class[3];
 
                         println!("{:#?}", wm_class);
-                        println!("{:#?}", connection.get_tree()?.nodes)
+                        // println!("{:#?}", connection.get_tree()?.nodes)
                     }
 
                 }

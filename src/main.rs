@@ -1,5 +1,6 @@
 extern crate i3ipc;
 extern crate i3wsr;
+extern crate xcb;
 use i3ipc::I3EventListener;
 // use std::process;
 use i3ipc::Subscription;
@@ -19,11 +20,12 @@ fn main() {
     let subs = [Subscription::Window];
     listener.subscribe(&subs).ok().expect("Failed to subscribe");
 
+    let (conn, _) = xcb::Connection::connect(None).expect("Failed to connect to X");
     // println!("tree: {:#?}", connection.get_tree());
     for event in listener.listen() {
         match event {
             Ok(Event::WindowEvent(e)) => {
-                if let Err(e) = i3wsr::handle_window_event(e) {
+                if let Err(e) = i3wsr::handle_window_event(e, &conn) {
                     eprintln!("handle_window_event error: {}", e);
                 }
             },

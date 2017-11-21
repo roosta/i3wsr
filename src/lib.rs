@@ -41,7 +41,32 @@ fn get_class(conn: &xcb::Connection, id: u32) -> String {
     }
     let result = String::from_utf8(buf).unwrap();
     let results: Vec<&str> = result.split('\0').collect();
-    results[0].to_string()
+    results[1].to_string()
+}
+
+fn get_window_type(conn: &xcb::Connection, id: u32) {
+    let window: xproto::Window = id;
+    let ident = xcb::intern_atom(&conn, true, "_NET_WM_WINDOW_TYPE").get_reply().unwrap().atom();
+    let cookie = xproto::get_property(
+        &conn,
+        false,
+        window,
+        ident,
+        xproto::ATOM_ATOM,
+        0,
+        1024,
+    );
+    match cookie.get_reply() {
+        Ok(reply) => {
+            let value: u32 = reply.value()[0];
+            let normal: u32 = xcb::intern_atom(&conn, true, "_NET_WM_WINDOW_TYPE_NORMAL").get_reply().unwrap().atom();
+
+            println!("value: {:?}, normal: {:?}", value, normal);
+        },
+        Err(err) => {
+            println!("{:?}", err);
+        }
+    }
 }
 
 pub fn handle_window_event(e: WindowEventInfo, conn: &xcb::Connection) -> Result<(), Box<Error>> {
@@ -50,7 +75,9 @@ pub fn handle_window_event(e: WindowEventInfo, conn: &xcb::Connection) -> Result
             // let percent: f64 = e.container.percent.ok_or("Failed to get container size percent")?;
             // let name: String = e.container.name.ok_or("Failed to get container name")?;
             let id: u32 = e.container.window.ok_or("Failed to get container id")? as u32;
-            println!("class: {:?}", get_class(&conn, id));
+            println!("{}", get_class(&conn, id));
+            get_window_type(&conn, id);
+            println!("--------------------------");
 
         },
         WindowChange::Close => {

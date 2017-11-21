@@ -3,14 +3,8 @@ extern crate xcb;
 
 use i3ipc::event::WindowEventInfo;
 use i3ipc::event::inner::WindowChange;
-// use std::process::Command;
-// use std::str;
 use std::error::Error;
-// use std::ffi::CString;
-// use std::os::raw::*;
 use xcb::xproto;
-// use std::ptr;
-// use std::mem;
 
 fn get_class(conn: &xcb::Connection, id: u32) -> String {
     let window: xproto::Window = id;
@@ -56,16 +50,13 @@ pub fn handle_window_event(e: WindowEventInfo, conn: &xcb::Connection) -> Result
             // let percent: f64 = e.container.percent.ok_or("Failed to get container size percent")?;
             // let name: String = e.container.name.ok_or("Failed to get container name")?;
             let id: u32 = e.container.window.ok_or("Failed to get container id")? as u32;
-            println!("{:?}", get_class(&conn, id));
-
-
-
+            println!("class: {:?}", get_class(&conn, id));
 
         },
         WindowChange::Close => {
-            let percent: f64 = e.container.percent.unwrap_or(1.0);
-            let name: String = e.container.name.unwrap_or("unnamed".to_owned());
-            println!("{}, {}", name, percent);
+            // let percent: f64 = e.container.percent.unwrap_or(1.0);
+            // let name: String = e.container.name.unwrap_or("unnamed".to_owned());
+            // println!("{}, {}", name, percent);
         },
         _ => ()
     }

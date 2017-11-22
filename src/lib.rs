@@ -3,6 +3,7 @@ extern crate xcb;
 
 use i3ipc::event::WindowEventInfo;
 use i3ipc::event::inner::WindowChange;
+use i3ipc::I3Connection;
 use std::error::Error;
 use xcb::xproto;
 
@@ -48,12 +49,13 @@ fn is_normal(conn: &xcb::Connection, id: u32) -> Result<bool, Box<Error>> {
     return Ok(actual == expected);
 }
 
-pub fn handle_window_event(e: WindowEventInfo, x_conn: &xcb::Connection) -> Result<(), Box<Error>> {
+pub fn handle_window_event(e: WindowEventInfo, x_conn: &xcb::Connection, i3_conn: &mut I3Connection) -> Result<(), Box<Error>> {
     match e.change {
         WindowChange::New => {
-            let percent: f64 = e.container.percent.ok_or("Failed to get container size percent")?;
-            let name: String = e.container.name.ok_or("Failed to get container name")?;
-            let id: u32 = e.container.window.ok_or("Failed to get container id")? as u32;
+            let percent: f64 = e.container.percent.ok_or("1: Failed to get container size percent")?;
+            let name: String = e.container.name.ok_or("2: Failed to get container name")?;
+            let id: u32 = e.container.window.ok_or("3: Failed to get container id")? as u32;
+            let tree = i3_conn.get_tree()?;
             if is_normal(&x_conn, id)? {
                 let class = get_class(&x_conn, id)?;
                 println!("{}", class);

@@ -39,7 +39,8 @@ fn get_class(conn: &xcb::Connection, id: u32) -> Result<String, Box<Error>> {
     Ok(results[1].to_string())
 }
 
-/// Checks if window with id is of type normal
+/// Checks if window is of type normal
+/// Don't want to set WS name on popup windows and such.
 fn is_normal(conn: &xcb::Connection, id: u32) -> Result<bool, Box<Error>> {
     let window: xproto::Window = id;
     let ident = xcb::intern_atom(&conn, true, "_NET_WM_WINDOW_TYPE").get_reply()?.atom();

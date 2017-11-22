@@ -14,13 +14,26 @@ use i3ipc::I3Connection;
 //       A.2. if two windows add a split w1|w2, truncate if necessary
 //       A.3. If more than two, Name multiple or something
 // 3. loop
-fn main() {
-    let mut listener = I3EventListener::connect().ok().expect("Failed to connect to listener");
-    let mut i3_conn = I3Connection::connect().ok().expect("Failed to connect to i3");
-    let subs = [Subscription::Window];
-    listener.subscribe(&subs).ok().expect("Failed to subscribe to i3 window events");
 
-    let (x_conn, _) = xcb::Connection::connect(None).expect("Failed to connect to X");
+/// Why? cause I'm learning. Also lets me handle these spesific errors which
+/// should exit the program
+fn unwrap_connection<T, E: ::std::fmt::Debug>(obj: Result<T, E>) -> T {
+    match obj {
+        Ok(val) => val,
+        Err(e) => {
+            eprintln!("Connection error: {:?}", e);
+            process::exit(1);
+        }
+    }
+}
+
+fn main() {
+    let mut listener = unwrap_connection(I3EventListener::connect());
+    let mut i3_conn = unwrap_connection(I3Connection::connect());
+    let subs = [Subscription::Window];
+    unwrap_connection(listener.subscribe(&subs));
+    let (x_conn, _) = unwrap_connection(xcb::Connection::connect(None));
+
     for event in listener.listen() {
         match event {
             Ok(Event::WindowEvent(e)) => {
@@ -29,7 +42,10 @@ fn main() {
                     process::exit(1);
                 }
             },
-            Err(e) => eprintln!("Error: {}", e),
+            Err(e) => {
+                eprintln!("Error: {}", e);
+                process::exit(1);
+            }
             _ => unreachable!()
         }
     }

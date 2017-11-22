@@ -44,40 +44,25 @@ fn get_class(conn: &xcb::Connection, id: u32) -> String {
     results[1].to_string()
 }
 
-fn get_window_type(conn: &xcb::Connection, id: u32) {
+/// Checks if window with id is of type normal
+fn is_normal(conn: &xcb::Connection, id: u32) -> Result<bool, Box<Error>> {
     let window: xproto::Window = id;
-    let ident = xcb::intern_atom(&conn, true, "_NET_WM_WINDOW_TYPE").get_reply().unwrap().atom();
-    let cookie = xproto::get_property(
-        &conn,
-        false,
-        window,
-        ident,
-        xproto::ATOM_ATOM,
-        0,
-        1024,
-    );
-    match cookie.get_reply() {
-        Ok(reply) => {
-            let value: u32 = reply.value()[0];
-            let normal: u32 = xcb::intern_atom(&conn, true, "_NET_WM_WINDOW_TYPE_NORMAL").get_reply().unwrap().atom();
-
-            println!("value: {:?}, normal: {:?}", value, normal);
-        },
-        Err(err) => {
-            println!("{:?}", err);
-        }
-    }
+    let ident = xcb::intern_atom(&conn, true, "_NET_WM_WINDOW_TYPE").get_reply()?.atom();
+    let reply = xproto::get_property(&conn, false, window, ident, xproto::ATOM_ATOM, 0, 1024).get_reply()?;
+    let actual: u32 = reply.value()[0];
+    let expected: u32 = xcb::intern_atom(&conn, true, "_NET_WM_WINDOW_TYPE_NORMAL").get_reply()?.atom();
+    return Ok(actual == expected);
 }
 
-pub fn handle_window_event(e: WindowEventInfo, conn: &xcb::Connection) -> Result<(), Box<Error>> {
+pub fn handle_window_event(e: WindowEventInfo, x_conn: &xcb::Connection) -> Result<(), Box<Error>> {
     match e.change {
         WindowChange::New => {
-            // let percent: f64 = e.container.percent.ok_or("Failed to get container size percent")?;
-            // let name: String = e.container.name.ok_or("Failed to get container name")?;
+            let percent: f64 = e.container.percent.ok_or("Failed to get container size percent")?;
+            let name: String = e.container.name.ok_or("Failed to get container name")?;
             let id: u32 = e.container.window.ok_or("Failed to get container id")? as u32;
-            println!("{}", get_class(&conn, id));
-            get_window_type(&conn, id);
-            println!("--------------------------");
+            if is_normal(&x_conn, id)? {
+                println!("{}", get_class(&x_conn, id));
+            }
 
         },
         WindowChange::Close => {

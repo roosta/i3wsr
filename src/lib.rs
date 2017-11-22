@@ -6,7 +6,7 @@ use i3ipc::event::inner::WindowChange;
 use std::error::Error;
 use xcb::xproto;
 
-fn get_class(conn: &xcb::Connection, id: u32) -> String {
+fn get_class(conn: &xcb::Connection, id: u32) -> Result<String, Box<Error>> {
     let window: xproto::Window = id;
     let long_length: u32 = 8;
     let mut long_offset: u32 = 0;
@@ -21,27 +21,21 @@ fn get_class(conn: &xcb::Connection, id: u32) -> String {
             long_offset,
             long_length,
         );
-        match cookie.get_reply() {
-            Ok(reply) => {
-                let value: &[u8] = reply.value();
-                buf.extend_from_slice(value);
-                match reply.bytes_after() {
-                    0 => break,
-                    _ => {
-                        let len = reply.value_len();
-                        long_offset += len / 4;
-                    }
-                }
-            }
-            Err(err) => {
-                println!("{:?}", err);
-                break;
+
+        let reply = cookie.get_reply()?;
+        let value: &[u8] = reply.value();
+        buf.extend_from_slice(value);
+        match reply.bytes_after() {
+            0 => break,
+            _ => {
+                let len = reply.value_len();
+                long_offset += len / 4;
             }
         }
     }
-    let result = String::from_utf8(buf).unwrap();
+    let result = String::from_utf8(buf)?;
     let results: Vec<&str> = result.split('\0').collect();
-    results[1].to_string()
+    Ok(results[1].to_string())
 }
 
 /// Checks if window with id is of type normal
@@ -61,7 +55,8 @@ pub fn handle_window_event(e: WindowEventInfo, x_conn: &xcb::Connection) -> Resu
             let name: String = e.container.name.ok_or("Failed to get container name")?;
             let id: u32 = e.container.window.ok_or("Failed to get container id")? as u32;
             if is_normal(&x_conn, id)? {
-                println!("{}", get_class(&x_conn, id));
+                let class = get_class(&x_conn, id)?;
+                println!("{}", class);
             }
 
         },

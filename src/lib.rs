@@ -9,6 +9,7 @@ use xcb::xproto;
 use i3ipc::reply::Node;
 use i3ipc::reply::NodeType;
 
+/// Gets the window class using XCB
 fn get_class(conn: &xcb::Connection, id: u32) -> Result<String, Box<Error>> {
     let window: xproto::Window = id;
     let long_length: u32 = 8;
@@ -78,6 +79,7 @@ fn get_workspace(root: &Node, window_id: u32) -> Option<String>  {
     out
 }
 
+/// handles new and close window events, to set the workspace name based on content
 pub fn handle_window_event(e: WindowEventInfo, x_conn: &xcb::Connection, i3_conn: &mut I3Connection) -> Result<(), Box<Error>> {
     match e.change {
         WindowChange::New => {
@@ -88,6 +90,7 @@ pub fn handle_window_event(e: WindowEventInfo, x_conn: &xcb::Connection, i3_conn
                 let tree = i3_conn.get_tree()?;
                 let _class = get_class(&x_conn, id)?;
                 if let Some(workspace) = get_workspace(&tree, id) {
+                    println!("{}", workspace);
 
                 }
             }

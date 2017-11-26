@@ -6,6 +6,8 @@ use i3ipc::event::inner::WindowChange;
 use i3ipc::I3Connection;
 use std::error::Error;
 use xcb::xproto;
+use i3ipc::reply::Node;
+use i3ipc::reply::NodeType;
 
 fn get_class(conn: &xcb::Connection, id: u32) -> Result<String, Box<Error>> {
     let window: xproto::Window = id;
@@ -50,18 +52,45 @@ fn is_normal(conn: &xcb::Connection, id: u32) -> Result<bool, Box<Error>> {
     return Ok(actual == expected);
 }
 
+/// If anyone happens to read this, I'd love some feedback on this function. I
+/// can't seem to find much on how to walk a collection like this in a more
+/// succinct manner.
+fn get_workspace(root: &Node, window_id: u32) -> Option<String>  {
+    let mut out = None;
+    for output in &root.nodes {
+        for container in &output.nodes {
+            for workspace in &container.nodes {
+                match workspace.nodetype {
+                    NodeType::Workspace => {
+                        for window in &workspace.nodes {
+                            if let Some(id) = window.window {
+                                if id as u32 == window_id {
+                                    out = workspace.name.to_owned();
+                                }
+                            }
+                        }
+                    },
+                    _ => ()
+                };
+            };
+        }
+    }
+    out
+}
+
 pub fn handle_window_event(e: WindowEventInfo, x_conn: &xcb::Connection, i3_conn: &mut I3Connection) -> Result<(), Box<Error>> {
     match e.change {
         WindowChange::New => {
             let percent: f64 = e.container.percent.ok_or("1: Failed to get container size percent")?;
             let name: String = e.container.name.ok_or("2: Failed to get container name")?;
             let id: u32 = e.container.window.ok_or("3: Failed to get container id")? as u32;
-            let tree = i3_conn.get_tree()?;
             if is_normal(&x_conn, id)? {
-                let class = get_class(&x_conn, id)?;
-                println!("{}", class);
-            }
+                let tree = i3_conn.get_tree()?;
+                let _class = get_class(&x_conn, id)?;
+                if let Some(workspace) = get_workspace(&tree, id) {
 
+                }
+            }
         },
         WindowChange::Close => {
             // let percent: f64 = e.container.percent.unwrap_or(1.0);

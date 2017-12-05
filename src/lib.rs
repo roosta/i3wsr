@@ -53,12 +53,9 @@ fn is_normal(conn: &xcb::Connection, id: u32) -> Result<bool, Box<Error>> {
     return Ok(actual == expected);
 }
 
-/// If anyone happens to read this, I'd love some feedback on this function. I
-/// can't seem to find much on how to walk a collection like this in a more
-/// succinct manner.
-fn get_workspace(root: &Node, window_id: u32) -> Option<String>  {
-    let mut out = None;
-    for output in &root.nodes {
+fn get_workspace(tree: &Node, window_id: u32) -> Option<&Node> {
+    let mut out: Option<&Node> = None;
+    for output in &tree.nodes {
         for container in &output.nodes {
             for workspace in &container.nodes {
                 match workspace.nodetype {
@@ -66,33 +63,61 @@ fn get_workspace(root: &Node, window_id: u32) -> Option<String>  {
                         for window in &workspace.nodes {
                             if let Some(id) = window.window {
                                 if id as u32 == window_id {
-                                    out = workspace.name.to_owned();
+                                    out = Some(workspace);
                                 }
                             }
                         }
                     },
                     _ => ()
-                };
-            };
+                }
+            }
         }
     }
     out
+}
+
+fn get_classes(workspace: &Node, x_conn: &xcb::Connection) -> Result<Vec<String>, Box<Error>> {
+    let mut window_ids: Vec<u32> = Vec::new();
+    for window in &workspace.nodes {
+        window_ids.push(window.window.ok_or("asd")? as u32);
+    }
+    let mut window_classes: Vec<String> = Vec::new();
+    for id in window_ids {
+        window_classes.push(get_class(&x_conn, id)?);
+    }
+    Ok(window_classes)
 }
 
 /// handles new and close window events, to set the workspace name based on content
 pub fn handle_window_event(e: WindowEventInfo, x_conn: &xcb::Connection, i3_conn: &mut I3Connection) -> Result<(), Box<Error>> {
     match e.change {
         WindowChange::New => {
+            // println!("{:#?}", e);
             let percent: f64 = e.container.percent.ok_or("1: Failed to get container size percent")?;
-            let name: String = e.container.name.ok_or("2: Failed to get container name")?;
-            let id: u32 = e.container.window.ok_or("3: Failed to get container id")? as u32;
-            if is_normal(&x_conn, id)? {
+            let active_window_id: u32 = e.container.window.ok_or("3: Failed to get window id")? as u32;
+            if is_normal(&x_conn, active_window_id)? {
                 let tree = i3_conn.get_tree()?;
-                let _class = get_class(&x_conn, id)?;
-                if let Some(workspace) = get_workspace(&tree, id) {
-                    println!("{}", workspace);
+                if let Some(workspace) = get_workspace(&tree, active_window_id) {
+                    let classes = get_classes(&workspace, &x_conn)?;
+                    println!("{:#?}", classes);
 
                 }
+                // if let Some(workspace) = get_workspace(&tree, window_id) {
+                // if percent == 0.5 {
+                // let command = format!("rename workspace {} to {}",
+                // workspace,
+                // format!("{}:{}", workspace, class));
+                // println!("{:?}", command);
+                // i3_conn.run_command(&command)?;
+                // }
+                // get_windows(&tree, window_id);
+                // let outcomes = match percent {
+                //     1.0 => i3_conn.run_command(&format!("rename workspace {} to {}", workspace, class))?,
+                //     _ =>
+                // };
+                // println!("{:#?}", outcome);
+
+                // }
             }
         },
         WindowChange::Close => {

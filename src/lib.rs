@@ -98,38 +98,18 @@ pub fn handle_window_event(e: WindowEventInfo, x_conn: &xcb::Connection, i3_conn
             if is_normal(&x_conn, active_window_id)? {
                 let tree = i3_conn.get_tree()?;
                 // let config = i3_conn.get_config()?;
-                // let asd: Vec<&str> = config.config.split("\"").collect();
+                // let config: Vec<&str> = config.config.split("\"").collect();
+                // let name: &str = &asd.get(2).unwrap_or(&"");
                 if let Some(workspace) = get_workspace(&tree, active_window_id) {
                     let classes = get_classes(&workspace, &x_conn)?.join("|");
                     let ws_name: String = workspace.name.to_owned().ok_or("Failed to get workspace name")?;
-                    let asd: Vec<&str> = ws_name.split(":").collect();
-                    let prefix: &str = &asd[..2].join(":");
-                    // let name: &str = &asd.get(2).unwrap_or(&"");
-                    // let name: &str = &asd[2..];
-                    // let prefix: Vec<&str> = ws_name.split(":").take(2).collect();
-                    // let name: String = ws_name.split(":").last().;
-                    // let name:
+                    let prefix: Vec<&str> = ws_name.split(":").take(2).collect();
                     let command = format!("rename workspace {} to {}",
                                           ws_name,
-                                          format!("{}:{}", prefix, classes));
+                                          format!("{}:{}", prefix.join(":"), classes));
                     println!("{:?}", command);
+                    // i3_conn.run_command(&command)?;
                 }
-                // if let Some(workspace) = get_workspace(&tree, window_id) {
-                // if percent == 0.5 {
-                // let command = format!("rename workspace {} to {}",
-                // workspace,
-                // format!("{}:{}", workspace, class));
-                // println!("{:?}", command);
-                // i3_conn.run_command(&command)?;
-                // }
-                // get_windows(&tree, window_id);
-                // let outcomes = match percent {
-                //     1.0 => i3_conn.run_command(&format!("rename workspace {} to {}", workspace, class))?,
-                //     _ =>
-                // };
-                // println!("{:#?}", outcome);
-
-                // }
             }
         },
         WindowChange::Close => {

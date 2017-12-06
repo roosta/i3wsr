@@ -1,1 +1,4 @@
 * https://stackoverflow.com/questions/44833160/how-do-i-get-the-x-window-class-given-a-window-id-with-rust-xcb
+* TODO Add option to trimming first chars
+* TODO Add logging option
+* TODO Separator option

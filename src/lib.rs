@@ -98,9 +98,14 @@ pub fn handle_window_event(e: WindowEventInfo, x_conn: &xcb::Connection, i3_conn
             if is_normal(&x_conn, active_window_id)? {
                 let tree = i3_conn.get_tree()?;
                 if let Some(workspace) = get_workspace(&tree, active_window_id) {
-                    let classes = get_classes(&workspace, &x_conn)?;
-                    println!("{:#?}", classes);
-
+                    let classes = get_classes(&workspace, &x_conn)?.join("|");
+                    let ws_name: String = workspace.name.to_owned().ok_or("Failed to get workspace name")?;
+                    let prefix = &ws_name[..3];
+                    let name = &ws_name[3..];
+                    let command = format!("rename workspace {} to {}",
+                                          ws_name,
+                                          format!("{}:{}", prefix, classes));
+                    println!("{}", command);
                 }
                 // if let Some(workspace) = get_workspace(&tree, window_id) {
                 // if percent == 0.5 {

@@ -3,8 +3,9 @@ name = "i3wsr"
 version = "0.1.0"
 authors = ["Daniel Berg <mail@roosta.sh>"]
 
-[dependencies.xcb]
-version = "0.8"
+[dependencies]
+xcb = "0.8"
+regex = "0.2.3"
 
 [dependencies.i3ipc]
 version = "0.8.2"

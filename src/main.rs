@@ -30,7 +30,7 @@ fn unwrap_connection<T, E: ::std::fmt::Debug>(obj: Result<T, E>) -> T {
 fn main() {
     let mut listener = unwrap_connection(I3EventListener::connect());
     let mut i3_conn = unwrap_connection(I3Connection::connect());
-    let subs = [Subscription::Window];
+    let subs = [Subscription::Window, Subscription::Workspace];
     unwrap_connection(listener.subscribe(&subs));
     let (x_conn, _) = unwrap_connection(xcb::Connection::connect(None));
 
@@ -42,10 +42,13 @@ fn main() {
                     // process::exit(1);
                 }
             },
+            Ok(Event::WorkspaceEvent(e)) => {
+                i3wsr::handle_ws_event(e);
+            },
             Err(e) => {
                 eprintln!("Error: {}", e);
                 process::exit(1);
-            }
+            },
             _ => unreachable!()
         }
     }

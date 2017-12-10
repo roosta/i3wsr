@@ -2,6 +2,7 @@ extern crate i3ipc;
 extern crate xcb;
 
 use i3ipc::event::WindowEventInfo;
+use i3ipc::event::WorkspaceEventInfo;
 use i3ipc::event::inner::WindowChange;
 use i3ipc::I3Connection;
 use std::error::Error;
@@ -104,8 +105,10 @@ fn add_to_ws(e: WindowEventInfo, x_conn: &xcb::Connection, i3_conn: &mut I3Conne
     Ok(())
 }
 
-fn rm_from_ws(e: WindowEventInfo) {
-    println!("{:#?}", e)
+fn rm_from_ws(e: WindowEventInfo, x_conn: &xcb::Connection) {
+    let active_window_id: u32 = e.container.window.unwrap() as u32;
+    let class = get_class(x_conn, active_window_id);
+    println!("{:#?}", class);
 }
 
 /// handles new and close window events, to set the workspace name based on content
@@ -116,11 +119,16 @@ pub fn handle_window_event(e: WindowEventInfo, x_conn: &xcb::Connection, i3_conn
         },
         WindowChange::Close => {
             // remove_from_ws(e, x_conn, i3_conn)?;
-            rm_from_ws(e);
+            rm_from_ws(e, x_conn);
         },
         _ => ()
     }
     Ok(())
+}
+
+pub fn handle_ws_event(e: WorkspaceEventInfo) {
+    println!("{:#?}", e);
+
 }
 
 #[cfg(test)]

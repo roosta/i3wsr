@@ -37,8 +37,8 @@ fn main() {
     for event in listener.listen() {
         match event {
             Ok(Event::WindowEvent(e)) => {
-                if let Err(e) = i3wsr::handle_window_event(e, &x_conn, &mut i3_conn) {
-                    eprintln!("handle_window_event error: {}", e);
+                if let Err(error) = i3wsr::handle_window_event(e, &x_conn, &mut i3_conn) {
+                    eprintln!("handle_window_event error: {}", error);
                     // process::exit(1);
                 }
             },

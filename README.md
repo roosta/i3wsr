@@ -24,6 +24,16 @@ cargo build --release
 
 Then place the built binary, located at `target/release/i3wsr`, somewhere on your `$path`.
 
+## Usage
+Just launch the program and it'll listen for events if you are running I3.
+Another option is to put something like this in your i3 config
+
+```
+exec_always --no-startup-id exec i3wsr
+```
+
+provided `i3wsr` is on your `$path`
+
 ## Configuration
 
 This program depends on numbered workspaces, since we're constantly changing the

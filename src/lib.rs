@@ -82,44 +82,42 @@ fn get_classes(workspace: &Node, x_conn: &xcb::Connection) -> Result<Vec<String>
     }
     let mut window_classes: Vec<String> = Vec::new();
     for id in window_ids {
-        window_classes.push(get_class(&x_conn, id)?);
+        if is_normal(&x_conn, id)? {
+            window_classes.push(get_class(&x_conn, id)?);
+        }
     }
     Ok(window_classes)
 }
 
-fn add_to_ws(e: WindowEventInfo, x_conn: &xcb::Connection, i3_conn: &mut I3Connection) -> Result<(), Box<Error>> {
-    let active_window_id: u32 = e.container.window.ok_or("3: Failed to get window id")? as u32;
+fn rename_ws(e: WindowEventInfo, x_conn: &xcb::Connection, i3_conn: &mut I3Connection) -> Result<(), Box<Error>> {
     let node_id = e.container.id;
-    if is_normal(&x_conn, active_window_id)? {
-        let tree = i3_conn.get_tree()?;
-        if let Some(workspace) = get_workspace(&tree, node_id) {
-            let classes = get_classes(&workspace, &x_conn)?.join("|");
-            let ws_name: String = workspace.name.to_owned().ok_or("Failed to get workspace name")?;
-            let prefix: Vec<&str> = ws_name.split(":").take(2).collect();
-            let command = format!("rename workspace {} to {}",
-                                  ws_name,
-                                  format!("{} {}", prefix.join(":"), classes));
-            i3_conn.run_command(&command)?;
-        }
+    let tree = i3_conn.get_tree()?;
+    if let Some(workspace) = get_workspace(&tree, node_id) {
+        let classes = get_classes(&workspace, &x_conn)?.join("|");
+        let ws_name: String = workspace.name.to_owned().ok_or("Failed to get workspace name")?;
+        let prefix: Vec<&str> = ws_name.split(":").take(2).collect();
+        let command = format!("rename workspace {} to {}",
+                              ws_name,
+                              format!("{} {}", prefix.join(":"), classes));
+
+        println!("{:?}", command);
+
+        i3_conn.run_command(&command)?;
     }
     Ok(())
-}
-
-fn rm_from_ws(e: WindowEventInfo, x_conn: &xcb::Connection) {
-    let active_window_id: u32 = e.container.window.unwrap() as u32;
-    let class = get_class(x_conn, active_window_id);
-    println!("{:#?}", class);
 }
 
 /// handles new and close window events, to set the workspace name based on content
 pub fn handle_window_event(e: WindowEventInfo, x_conn: &xcb::Connection, i3_conn: &mut I3Connection) -> Result<(), Box<Error>> {
     match e.change {
         WindowChange::New => {
-            add_to_ws(e, x_conn, i3_conn)?;
+            rename_ws(e, x_conn, i3_conn)?;
         },
         WindowChange::Close => {
+            rename_ws(e, x_conn, i3_conn)?;
+            // rename_ws(e, x_conn, i3_conn)?;
             // remove_from_ws(e, x_conn, i3_conn)?;
-            rm_from_ws(e, x_conn);
+            // rm_from_ws(e, x_conn);
         },
         _ => ()
     }
@@ -127,7 +125,7 @@ pub fn handle_window_event(e: WindowEventInfo, x_conn: &xcb::Connection, i3_conn
 }
 
 pub fn handle_ws_event(e: WorkspaceEventInfo) {
-    println!("{:#?}", e);
+    // println!("{:#?}", e);
 
 }
 

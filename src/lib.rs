@@ -4,6 +4,7 @@ extern crate xcb;
 use i3ipc::event::WindowEventInfo;
 use i3ipc::event::WorkspaceEventInfo;
 use i3ipc::event::inner::WindowChange;
+use i3ipc::event::inner::WorkspaceChange;
 use i3ipc::I3Connection;
 use std::error::Error;
 use xcb::xproto;
@@ -79,7 +80,7 @@ fn get_workspaces(tree: &Node) -> Vec<&Node> {
 fn get_classes(workspace: &Node, x_conn: &xcb::Connection) -> Result<Vec<String>, Box<Error>> {
     let mut window_ids: Vec<u32> = Vec::new();
     for window in &workspace.nodes {
-        window_ids.push(window.window.ok_or("asd")? as u32);
+        window_ids.push(window.window.ok_or("Failed to get window id!")? as u32);
     }
     let mut window_classes: Vec<String> = Vec::new();
     for id in window_ids {
@@ -108,7 +109,7 @@ fn update_tree(x_conn: &xcb::Connection, i3_conn: &mut I3Connection) -> Result<(
 /// handles new and close window events, to set the workspace name based on content
 pub fn handle_window_event(e: WindowEventInfo, x_conn: &xcb::Connection, i3_conn: &mut I3Connection) -> Result<(), Box<Error>> {
     match e.change {
-        WindowChange::New | WindowChange::Close => {
+        WindowChange::New | WindowChange::Close | WindowChange::Move => {
             update_tree(x_conn, i3_conn)?;
         },
         _ => ()
@@ -118,13 +119,12 @@ pub fn handle_window_event(e: WindowEventInfo, x_conn: &xcb::Connection, i3_conn
 
 /// handles ws events,
 pub fn handle_ws_event(e: WorkspaceEventInfo, x_conn: &xcb::Connection, i3_conn: &mut I3Connection) -> Result<(), Box<Error>> {
-    println!("{:#?}", e);
-    // match e.change {
-    //     WindowChange::New | WindowChange::Close => {
-    //         update_tree(x_conn, i3_conn)?;
-    //     },
-    //     _ => ()
-    // }
+    match e.change {
+        WorkspaceChange::Empty | WorkspaceChange::Focus => {
+            update_tree(x_conn, i3_conn)?;
+        },
+        _ => ()
+    }
     Ok(())
 }
 

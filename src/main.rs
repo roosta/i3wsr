@@ -45,6 +45,7 @@ fn main() {
             Ok(Event::WorkspaceEvent(e)) => {
                 if let Err(error) = i3wsr::handle_ws_event(e, &x_conn, &mut i3_conn) {
                     eprintln!("handle_ws_event error: {}", error);
+                    // process::exit(1);
                 }
             },
             Err(e) => {

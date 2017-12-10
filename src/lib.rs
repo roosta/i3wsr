@@ -80,7 +80,10 @@ fn get_workspaces(tree: &Node) -> Vec<&Node> {
 fn get_classes(workspace: &Node, x_conn: &xcb::Connection) -> Result<Vec<String>, Box<Error>> {
     let mut window_ids: Vec<u32> = Vec::new();
     for window in &workspace.nodes {
-        window_ids.push(window.window.ok_or("Failed to get window id!")? as u32);
+        window_ids.push(window
+                        .window
+                        .ok_or(format!("Failed to get window ID for window: {:#?}", &window))?
+                        as u32);
     }
     let mut window_classes: Vec<String> = Vec::new();
     for id in window_ids {
@@ -95,7 +98,10 @@ fn update_tree(x_conn: &xcb::Connection, i3_conn: &mut I3Connection) -> Result<(
     let workspaces = get_workspaces(&tree);
     for workspace in &workspaces {
         let classes = get_classes(&workspace, &x_conn)?.join("|");
-        let old: String = workspace.name.to_owned().ok_or("Failed to get workspace name!")?;
+        let old: String = workspace
+            .name
+            .to_owned()
+            .ok_or(format!("Failed to get workspace name for workspace: {:#?}", workspace))?;
         let old_split: Vec<&str> = old.split(' ').collect();
         let new = format!("{} {}", old_split[0], classes);
         if old != new {

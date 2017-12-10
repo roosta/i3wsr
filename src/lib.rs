@@ -80,10 +80,12 @@ fn get_workspaces(tree: &Node) -> Vec<&Node> {
 fn get_classes(workspace: &Node, x_conn: &xcb::Connection) -> Result<Vec<String>, Box<Error>> {
     let mut window_ids: Vec<u32> = Vec::new();
     for window in &workspace.nodes {
-        window_ids.push(window
-                        .window
-                        .ok_or(format!("Failed to get window ID for window: {:#?}", &window))?
-                        as u32);
+        match window.window {
+            Some(w) => {
+                window_ids.push(w as u32);
+            },
+            None => continue
+        }
     }
     let mut window_classes: Vec<String> = Vec::new();
     for id in window_ids {

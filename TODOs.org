@@ -1,3 +1,4 @@
 * https://stackoverflow.com/questions/44833160/how-do-i-get-the-x-window-class-given-a-window-id-with-rust-xcb
 * TODO Separator option
+* TODO Fix multiple container WS issue
 * [[https://github.com/mh21/i3-renameworkspaces][mh21/i3-renameworkspaces: Rename i3 workspaces to contain the names of the programs on them.]]

@@ -97,18 +97,14 @@ pub fn handle_window_event(e: WindowEventInfo, x_conn: &xcb::Connection, i3_conn
             let active_window_id: u32 = e.container.window.ok_or("3: Failed to get window id")? as u32;
             if is_normal(&x_conn, active_window_id)? {
                 let tree = i3_conn.get_tree()?;
-                // let config = i3_conn.get_config()?;
-                // let config: Vec<&str> = config.config.split("\"").collect();
-                // let name: &str = &asd.get(2).unwrap_or(&"");
                 if let Some(workspace) = get_workspace(&tree, active_window_id) {
                     let classes = get_classes(&workspace, &x_conn)?.join("|");
                     let ws_name: String = workspace.name.to_owned().ok_or("Failed to get workspace name")?;
                     let prefix: Vec<&str> = ws_name.split(":").take(2).collect();
                     let command = format!("rename workspace {} to {}",
                                           ws_name,
-                                          format!("{}:{}", prefix.join(":"), classes));
-                    println!("{:?}", command);
-                    // i3_conn.run_command(&command)?;
+                                          format!("{} {}", prefix.join(":"), classes));
+                    i3_conn.run_command(&command)?;
                 }
             }
         },

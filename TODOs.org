@@ -2,3 +2,4 @@
 * TODO Add option to trimming first chars
 * TODO Add logging option
 * TODO Separator option
+* [[https://github.com/mh21/i3-renameworkspaces][mh21/i3-renameworkspaces: Rename i3 workspaces to contain the names of the programs on them.]]

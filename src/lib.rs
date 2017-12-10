@@ -94,14 +94,10 @@ fn rename_ws(e: WindowEventInfo, x_conn: &xcb::Connection, i3_conn: &mut I3Conne
     let tree = i3_conn.get_tree()?;
     if let Some(workspace) = get_workspace(&tree, node_id) {
         let classes = get_classes(&workspace, &x_conn)?.join("|");
-        let ws_name: String = workspace.name.to_owned().ok_or("Failed to get workspace name")?;
-        let prefix: Vec<&str> = ws_name.split(":").take(2).collect();
-        let command = format!("rename workspace {} to {}",
-                              ws_name,
-                              format!("{} {}", prefix.join(":"), classes));
-
-        println!("{:?}", command);
-
+        let old: String = workspace.name.to_owned().ok_or("Failed to get workspace name")?;
+        let old_split: Vec<&str> = old.split(' ').collect();
+        let new = format!("{} {}", old_split[0], classes);
+        let command = format!("rename workspace \"{}\" to \"{}\"", old, new);
         i3_conn.run_command(&command)?;
     }
     Ok(())

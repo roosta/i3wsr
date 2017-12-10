@@ -10,7 +10,7 @@ use xcb::xproto;
 use i3ipc::reply::Node;
 use i3ipc::reply::NodeType;
 
-/// Gets the window class using XCB
+/// Return the window class based on id.
 fn get_class(conn: &xcb::Connection, id: u32) -> Result<String, Box<Error>> {
     let window: xproto::Window = id;
     let long_length: u32 = 8;
@@ -43,9 +43,12 @@ fn get_class(conn: &xcb::Connection, id: u32) -> Result<String, Box<Error>> {
     Ok(results[1].to_string())
 }
 
-/// Checks if window is of type normal
-/// Don't want to set WS name on popup windows and such.
-fn is_normal(conn: &xcb::Connection, id: u32) -> Result<bool, Box<Error>> {
+/// Checks if window is of type normal. The problem with this is that not all
+/// windows define a type (spotify, I'm looking at you) Also, even if the window
+/// type is normal, the class returned will be the same regardless of type, and
+/// it won't trigger a change. We do end up doing some redundant calculations by
+/// not using this but makes the program much more forgiving.
+fn _is_normal(conn: &xcb::Connection, id: u32) -> Result<bool, Box<Error>> {
     let window: xproto::Window = id;
     let ident = xcb::intern_atom(&conn, true, "_NET_WM_WINDOW_TYPE").get_reply()?.atom();
     let reply = xproto::get_property(&conn, false, window, ident, xproto::ATOM_ATOM, 0, 1024).get_reply()?;
@@ -54,18 +57,15 @@ fn is_normal(conn: &xcb::Connection, id: u32) -> Result<bool, Box<Error>> {
     return Ok(actual == expected);
 }
 
-fn get_workspace(tree: &Node, node_id: i64) -> Option<&Node> {
-    let mut out: Option<&Node> = None;
+/// return a collection of workspace nodes
+fn get_workspaces(tree: &Node) -> Vec<&Node> {
+    let mut out: Vec<&Node> = Vec::new();
     for output in &tree.nodes {
         for container in &output.nodes {
             for workspace in &container.nodes {
                 match workspace.nodetype {
                     NodeType::Workspace => {
-                        for window in &workspace.nodes {
-                            if window.id == node_id {
-                                out = Some(workspace);
-                            }
-                        }
+                        out.push(&workspace);
                     },
                     _ => ()
                 }
@@ -75,6 +75,7 @@ fn get_workspace(tree: &Node, node_id: i64) -> Option<&Node> {
     out
 }
 
+/// Return a collection of window classes
 fn get_classes(workspace: &Node, x_conn: &xcb::Connection) -> Result<Vec<String>, Box<Error>> {
     let mut window_ids: Vec<u32> = Vec::new();
     for window in &workspace.nodes {
@@ -82,23 +83,24 @@ fn get_classes(workspace: &Node, x_conn: &xcb::Connection) -> Result<Vec<String>
     }
     let mut window_classes: Vec<String> = Vec::new();
     for id in window_ids {
-        if is_normal(&x_conn, id)? {
-            window_classes.push(get_class(&x_conn, id)?);
-        }
+        window_classes.push(get_class(&x_conn, id)?);
     }
     Ok(window_classes)
 }
 
-fn rename_ws(e: WindowEventInfo, x_conn: &xcb::Connection, i3_conn: &mut I3Connection) -> Result<(), Box<Error>> {
-    let node_id = e.container.id;
+/// Update all workspace names in tree
+fn update_tree(x_conn: &xcb::Connection, i3_conn: &mut I3Connection) -> Result<(), Box<Error>> {
     let tree = i3_conn.get_tree()?;
-    if let Some(workspace) = get_workspace(&tree, node_id) {
+    let workspaces = get_workspaces(&tree);
+    for workspace in &workspaces {
         let classes = get_classes(&workspace, &x_conn)?.join("|");
-        let old: String = workspace.name.to_owned().ok_or("Failed to get workspace name")?;
+        let old: String = workspace.name.to_owned().ok_or("Failed to get workspace name!")?;
         let old_split: Vec<&str> = old.split(' ').collect();
         let new = format!("{} {}", old_split[0], classes);
-        let command = format!("rename workspace \"{}\" to \"{}\"", old, new);
-        i3_conn.run_command(&command)?;
+        if old != new {
+            let command = format!("rename workspace \"{}\" to \"{}\"", old, new);
+            i3_conn.run_command(&command)?;
+        }
     }
     Ok(())
 }
@@ -106,23 +108,24 @@ fn rename_ws(e: WindowEventInfo, x_conn: &xcb::Connection, i3_conn: &mut I3Conne
 /// handles new and close window events, to set the workspace name based on content
 pub fn handle_window_event(e: WindowEventInfo, x_conn: &xcb::Connection, i3_conn: &mut I3Connection) -> Result<(), Box<Error>> {
     match e.change {
-        WindowChange::New => {
-            rename_ws(e, x_conn, i3_conn)?;
-        },
-        WindowChange::Close => {
-            rename_ws(e, x_conn, i3_conn)?;
-            // rename_ws(e, x_conn, i3_conn)?;
-            // remove_from_ws(e, x_conn, i3_conn)?;
-            // rm_from_ws(e, x_conn);
+        WindowChange::New | WindowChange::Close => {
+            update_tree(x_conn, i3_conn)?;
         },
         _ => ()
     }
     Ok(())
 }
 
-pub fn handle_ws_event(e: WorkspaceEventInfo) {
-    // println!("{:#?}", e);
-
+/// handles ws events,
+pub fn handle_ws_event(e: WorkspaceEventInfo, x_conn: &xcb::Connection, i3_conn: &mut I3Connection) -> Result<(), Box<Error>> {
+    println!("{:#?}", e);
+    // match e.change {
+    //     WindowChange::New | WindowChange::Close => {
+    //         update_tree(x_conn, i3_conn)?;
+    //     },
+    //     _ => ()
+    // }
+    Ok(())
 }
 
 #[cfg(test)]

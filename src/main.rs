@@ -43,13 +43,15 @@ fn main() {
                 }
             },
             Ok(Event::WorkspaceEvent(e)) => {
-                i3wsr::handle_ws_event(e);
+                if let Err(error) = i3wsr::handle_ws_event(e, &x_conn, &mut i3_conn) {
+                    eprintln!("handle_ws_event error: {}", error);
+                }
             },
             Err(e) => {
                 eprintln!("Error: {}", e);
                 process::exit(1);
             },
-            _ => unreachable!()
+            _ => ()
         }
     }
 }

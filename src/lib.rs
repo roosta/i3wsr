@@ -40,8 +40,10 @@ fn get_class(conn: &xcb::Connection, id: u32) -> Result<String, Box<Error>> {
         }
     }
     let result = String::from_utf8(buf)?;
-    let results: Vec<&str> = result.split('\0').collect();
-    Ok(results[1].to_string())
+    let mut results: Vec<&str> = result.split('\0').collect();
+    let error_message = format!("Failed to get a class for window id: {}", id);
+    results.pop();
+    Ok(results.last().ok_or(error_message)?.to_string())
 }
 
 /// Checks if window is of type normal. The problem with this is that not all

@@ -1,4 +1,5 @@
-* https://stackoverflow.com/questions/44833160/how-do-i-get-the-x-window-class-given-a-window-id-with-rust-xcb
 * TODO Separator option
-* TODO Fix multiple container WS issue
-* [[https://github.com/mh21/i3-renameworkspaces][mh21/i3-renameworkspaces: Rename i3 workspaces to contain the names of the programs on them.]]
+* TODO Testing
+** [[https://stackoverflow.com/questions/14321636/fake-x-server-for-testing][Fake X server for testing? - Stack Overflow]]
+** [[https://docs.travis-ci.com/user/installing-dependencies/][Installing Dependencies - Travis CI]]
+** [[http://blog.kagesenshi.org/2007/06/running-x-applications-headless-using.html][Running X applications headless using Xvfb]]

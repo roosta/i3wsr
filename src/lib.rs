@@ -12,6 +12,7 @@ use i3ipc::reply::Node;
 use i3ipc::reply::NodeType;
 
 /// Return the window class based on id.
+/// Source: https://stackoverflow.com/questions/44833160/how-do-i-get-the-x-window-class-given-a-window-id-with-rust-xcb
 fn get_class(conn: &xcb::Connection, id: u32) -> Result<String, Box<Error>> {
     let window: xproto::Window = id;
     let long_length: u32 = 8;
@@ -78,17 +79,29 @@ fn get_workspaces(tree: &Node) -> Vec<&Node> {
     out
 }
 
+
 /// Return a collection of window classes
 fn get_classes(workspace: &Node, x_conn: &xcb::Connection) -> Result<Vec<String>, Box<Error>> {
     let mut window_ids: Vec<u32> = Vec::new();
-    for window in &workspace.nodes {
-        match window.window {
-            Some(w) => {
-                window_ids.push(w as u32);
+    let mut nodes: Vec<Vec<&Node>> = vec![workspace.nodes.iter().collect()];
+    loop {
+        match nodes.pop() {
+            Some(next) => {
+                for n in next {
+                    if !n.nodes.is_empty() {
+                        nodes.push(n.nodes.iter().collect());
+                    }
+                    match n.window {
+                        Some(w) => {
+                            window_ids.push(w as u32);
+                        },
+                        None => ()
+                    }
+                }
             },
-            None => continue
-        }
-    }
+            None => break
+        };
+    };
     let mut window_classes: Vec<String> = Vec::new();
     for id in window_ids {
         window_classes.push(get_class(&x_conn, id)?);

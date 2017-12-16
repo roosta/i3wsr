@@ -1,0 +1,15 @@
+before_install:
+  - sudo apt-get update -qq
+  - sudo apt-get install xvfb i3-wm gpick -y
+before_script:
+  - script/test_env.sh
+language: rust
+sudo: true
+cache: cargo
+rust:
+  - stable
+  - beta
+  - nightly
+matrix:
+  allow_failures:
+    - rust: nightly

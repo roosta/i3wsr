@@ -26,6 +26,11 @@ fn main() {
     unwrap_connection(listener.subscribe(&subs));
     let (x_conn, _) = unwrap_connection(xcb::Connection::connect(None));
 
+    if let Err(error) = i3wsr::update_tree(&x_conn, &mut i3_conn) {
+        eprintln!("Failed initial tree update with error: {}", error);
+        process::exit(1);
+    }
+
     for event in listener.listen() {
         match event {
             Ok(Event::WindowEvent(e)) => {

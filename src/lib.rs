@@ -110,7 +110,7 @@ fn get_classes(workspace: &Node, x_conn: &xcb::Connection) -> Result<Vec<String>
 }
 
 /// Update all workspace names in tree
-fn update_tree(x_conn: &xcb::Connection, i3_conn: &mut I3Connection) -> Result<(), Box<Error>> {
+pub fn update_tree(x_conn: &xcb::Connection, i3_conn: &mut I3Connection) -> Result<(), Box<Error>> {
     let tree = i3_conn.get_tree()?;
     let workspaces = get_workspaces(&tree);
     for workspace in &workspaces {
@@ -157,7 +157,7 @@ mod tests {
     use i3ipc::reply::NodeType;
 
     #[test]
-    fn update_tree() {
+    fn connection_tree() {
         env::set_var("DISPLAY", ":100");
         let (x_conn, _) = super::xcb::Connection::connect(None).unwrap();
         let mut i3_conn = super::I3Connection::connect().unwrap();

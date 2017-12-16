@@ -153,7 +153,31 @@ pub fn handle_ws_event(e: WorkspaceEventInfo, x_conn: &xcb::Connection, i3_conn:
 
 #[cfg(test)]
 mod tests {
+    mod nodes;
+    use std::env;
+
     #[test]
-    fn it_works() {
+    fn update_tree() {
+        env::set_var("DISPLAY", ":100");
+        let (x_conn, _) = super::xcb::Connection::connect(None).unwrap();
+        let mut i3_conn = super::I3Connection::connect().unwrap();
+        assert!(super::update_tree(&x_conn, &mut i3_conn).is_ok());
     }
+
+    #[test]
+    fn get_classes() {
+        env::set_var("DISPLAY", ":100");
+        let (x_conn, _) = super::xcb::Connection::connect(None).unwrap();
+        let mut i3_conn = super::I3Connection::connect().unwrap();
+        let tree = i3_conn.get_tree().unwrap();
+        let workspaces = super::get_workspaces(&tree);
+        let mut result: Vec<Vec<String>> = Vec::new();
+        for workspace in workspaces {
+            result.push(super::get_classes(&workspace, &x_conn).unwrap());
+
+        }
+        let expected = vec![vec![], vec![String::from("Gpick")]];
+        assert_eq!(result, expected);
+    }
+
 }

@@ -1,5 +1,7 @@
 i3wsr - i3 workspace renamer
 ======
+[![Build Status](https://travis-ci.org/roosta/i3wsr.svg?branch=master)](https://travis-ci.org/roosta/i3wsr)
+
 `i3wsr` is a small program that uses [I3's](https://i3wm.org/) [IPC Interface](https://i3wm.org/docs/ipc.html)
 to change the name of a workspace based on its contents.
 

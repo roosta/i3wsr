@@ -158,7 +158,7 @@ mod tests {
 
     #[test]
     fn connection_tree() {
-        env::set_var("DISPLAY", ":100");
+        env::set_var("DISPLAY", ":99.0");
         let (x_conn, _) = super::xcb::Connection::connect(None).unwrap();
         let mut i3_conn = super::I3Connection::connect().unwrap();
         match super::update_tree(&x_conn, &mut i3_conn) {
@@ -187,7 +187,7 @@ mod tests {
 
     #[test]
     fn get_class() {
-        env::set_var("DISPLAY", ":100");
+        env::set_var("DISPLAY", ":99.0");
         let (x_conn, _) = super::xcb::Connection::connect(None).unwrap();
         let mut i3_conn = super::I3Connection::connect().unwrap();
         let tree = i3_conn.get_tree().unwrap();
@@ -208,7 +208,7 @@ mod tests {
 
     #[test]
     fn get_classes() {
-        env::set_var("DISPLAY", ":100");
+        env::set_var("DISPLAY", ":99.0");
         let (x_conn, _) = super::xcb::Connection::connect(None).unwrap();
         let mut i3_conn = super::I3Connection::connect().unwrap();
         let tree = i3_conn.get_tree().unwrap();

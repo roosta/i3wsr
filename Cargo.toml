@@ -8,4 +8,3 @@ xcb = "0.8"
 
 [dependencies.i3ipc]
 version = "0.8.2"
-features = ["i3-4-14"]

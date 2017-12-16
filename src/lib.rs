@@ -156,13 +156,15 @@ mod tests {
     use std::env;
     use i3ipc::reply::NodeType;
 
-
     #[test]
     fn update_tree() {
         env::set_var("DISPLAY", ":100");
         let (x_conn, _) = super::xcb::Connection::connect(None).unwrap();
         let mut i3_conn = super::I3Connection::connect().unwrap();
-        let _ = super::update_tree(&x_conn, &mut i3_conn);
+        match super::update_tree(&x_conn, &mut i3_conn) {
+            Ok(_) => (),
+            Err(_) => assert!(false)
+        };
         let tree = i3_conn.get_tree().unwrap();
         let mut name:String = String::new();
         for output in &tree.nodes {

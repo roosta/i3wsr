@@ -153,15 +153,55 @@ pub fn handle_ws_event(e: WorkspaceEventInfo, x_conn: &xcb::Connection, i3_conn:
 
 #[cfg(test)]
 mod tests {
-    mod nodes;
     use std::env;
+    use i3ipc::reply::NodeType;
+
 
     #[test]
     fn update_tree() {
         env::set_var("DISPLAY", ":100");
         let (x_conn, _) = super::xcb::Connection::connect(None).unwrap();
         let mut i3_conn = super::I3Connection::connect().unwrap();
-        assert!(super::update_tree(&x_conn, &mut i3_conn).is_ok());
+        let _ = super::update_tree(&x_conn, &mut i3_conn);
+        let tree = i3_conn.get_tree().unwrap();
+        let mut name:String = String::new();
+        for output in &tree.nodes {
+            for container in &output.nodes {
+                for workspace in &container.nodes {
+                    match workspace.nodetype {
+                        NodeType::Workspace => {
+                            let ws_n = workspace.name.to_owned();
+                            if ws_n == Some(String::from("1 Gpick")) {
+                                name = ws_n.unwrap()
+                            }
+                        },
+                        _ => ()
+                    }
+                }
+            }
+        }
+       assert_eq!(name, String::from("1 Gpick"));
+    }
+
+    #[test]
+    fn get_class() {
+        env::set_var("DISPLAY", ":100");
+        let (x_conn, _) = super::xcb::Connection::connect(None).unwrap();
+        let mut i3_conn = super::I3Connection::connect().unwrap();
+        let tree = i3_conn.get_tree().unwrap();
+        let mut id: u32 = 0;
+        let workspaces = super::get_workspaces(&tree);
+        for workspace in &workspaces {
+            for node in &workspace.nodes {
+                match node.window {
+                    Some(w) => id = w as u32,
+                    None => ()
+                }
+            }
+        }
+        let result = super::get_class(&x_conn, id).unwrap();
+        assert_eq!(String::from("Gpick"), result);
+
     }
 
     #[test]
@@ -174,10 +214,8 @@ mod tests {
         let mut result: Vec<Vec<String>> = Vec::new();
         for workspace in workspaces {
             result.push(super::get_classes(&workspace, &x_conn).unwrap());
-
         }
         let expected = vec![vec![], vec![String::from("Gpick")]];
         assert_eq!(result, expected);
     }
-
 }

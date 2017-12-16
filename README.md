@@ -8,6 +8,8 @@ to change the name of a workspace based on its contents.
 The chosen name for a workspace is a composite of the `WM_CLASS` X11 window
 property for each window in a workspace. In action it would look something like this:
 
+![](assets/preview.gif)
+
 ## Installation
 [Rust](https://www.rust-lang.org/en-US/), and [Cargo](http://doc.crates.io/) is
 required, and `i3wsr` can be installed using cargo like so:

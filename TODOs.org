@@ -3,3 +3,6 @@
 ** [[https://stackoverflow.com/questions/14321636/fake-x-server-for-testing][Fake X server for testing? - Stack Overflow]]
 ** [[https://docs.travis-ci.com/user/installing-dependencies/][Installing Dependencies - Travis CI]]
 ** [[http://blog.kagesenshi.org/2007/06/running-x-applications-headless-using.html][Running X applications headless using Xvfb]]
+* TODO Issue where floating windows does not get counted
+To reproduce open a floating window in an empty workspace, switch to another
+and then the WS name should be reset.

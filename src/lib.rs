@@ -79,11 +79,9 @@ fn get_workspaces(tree: &Node) -> Vec<&Node> {
     out
 }
 
-
-/// Return a collection of window classes
-fn get_classes(workspace: &Node, x_conn: &xcb::Connection) -> Result<Vec<String>, Box<Error>> {
+/// get window ids for any depth collection of nodes
+fn get_ids(nodes: &mut Vec<Vec<&Node>>) -> Vec<u32> {
     let mut window_ids: Vec<u32> = Vec::new();
-    let mut nodes: Vec<Vec<&Node>> = vec![workspace.nodes.iter().collect()];
     loop {
         match nodes.pop() {
             Some(next) => {
@@ -101,6 +99,17 @@ fn get_classes(workspace: &Node, x_conn: &xcb::Connection) -> Result<Vec<String>
             },
             None => break
         };
+    };
+    window_ids
+}
+
+/// Return a collection of window classes
+fn get_classes(workspace: &Node, x_conn: &xcb::Connection) -> Result<Vec<String>, Box<Error>> {
+    let window_ids: Vec<u32> = {
+        let mut f: Vec<u32> = get_ids(&mut vec![workspace.floating_nodes.iter().collect()]);
+        let mut n: Vec<u32> = get_ids(&mut vec![workspace.nodes.iter().collect()]);
+        n.append(&mut f);
+        n
     };
     let mut window_classes: Vec<String> = Vec::new();
     for id in window_ids {

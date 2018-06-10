@@ -1,12 +1,14 @@
 before_script:
   - echo "deb http://cz.archive.ubuntu.com/ubuntu xenial main universe" | sudo tee -a /etc/apt/sources.list
   - sudo apt-get update -qq
-  - sudo apt-get install i3-wm gcc gpick -y
+  - sudo apt-get install i3-wm leafpad gcc gpick -y
   - "export DISPLAY=:99.0"
   - "sh -e /etc/init.d/xvfb start"
   - "sleep 3"
   - "i3 &"
   - "gpick &"
+  - "xterm &"
+  - "i3-msg [class=\"XTerm\"] floating enable"
 language: rust
 sudo: true
 cache: cargo

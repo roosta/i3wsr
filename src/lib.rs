@@ -182,7 +182,7 @@ mod tests {
                     match workspace.nodetype {
                         NodeType::Workspace => {
                             let ws_n = workspace.name.to_owned();
-                            if ws_n == Some(String::from("1 Gpick")) {
+                            if ws_n == Some(String::from("1 Gpick|XTerm")) {
                                 name = ws_n.unwrap()
                             }
                         },
@@ -191,7 +191,7 @@ mod tests {
                 }
             }
         }
-       assert_eq!(name, String::from("1 Gpick"));
+       assert_eq!(name, String::from("1 Gpick|XTerm"));
     }
 
     #[test]
@@ -200,18 +200,25 @@ mod tests {
         let (x_conn, _) = super::xcb::Connection::connect(None).unwrap();
         let mut i3_conn = super::I3Connection::connect().unwrap();
         let tree = i3_conn.get_tree().unwrap();
-        let mut id: u32 = 0;
+        let mut ids: Vec<u32> = Vec::new();
         let workspaces = super::get_workspaces(&tree);
         for workspace in &workspaces {
             for node in &workspace.nodes {
                 match node.window {
-                    Some(w) => id = w as u32,
+                    Some(w) => ids.push(w as u32),
                     None => ()
                 }
             }
-        }
-        let result = super::get_class(&x_conn, id).unwrap();
-        assert_eq!(String::from("Gpick"), result);
+            for node in &workspace.floating_nodes {
+                println!("{:#?}", node);
+                match node.window {
+                    Some(w) => ids.push(w as u32),
+                    None => ()
+                }
+            }
+        };
+        let result: Vec<String> = ids.iter().map(|id| super::get_class(&x_conn, *id).unwrap()).collect();
+        assert_eq!(result, vec!["Gpick", "XTerm"]);
 
     }
 

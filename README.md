@@ -33,10 +33,8 @@ Just launch the program and it'll listen for events if you are running I3.
 Another option is to put something like this in your i3 config
 
 ```
-exec_always --no-startup-id exec i3wsr
+exec_always --no-startup-id exec $HOME/.cargo/bin/i3wsr
 ```
-
-provided `i3wsr` is on your `$path`
 
 ## Configuration
 
@@ -64,14 +62,24 @@ You can take this a bit further by using a bar that trims the workspace number a
 [Q] Emacs|Firefox
 ```
 
+## Test environment
+To run the tests `Xvfb` needs to be installed and run:
+
+```shell
+Xvfb :99.0
+```
+This sets up a headless x server running on DISPLAY :99.0, then some apps needs to be run in this new server:
+
+```shell
+env DISPLAY=:99.0 gpick
+env DISPLAY=:99.0 i3 -c /etc/i3/config
+```
+
+refer to [.travis.yml](https://github.com/roosta/i3wsr/blob/master/.travis.yml) for a CI example
+
 ## Attribution
 This program would not be possible without
 [i3ipc-rs](https://github.com/tmerr/i3ipc-rs), a rust library for controlling
 i3-wm through its IPC interface and
 [rust-xcb](https://github.com/rtbo/rust-xcb), a set of rust bindings and
-wrappers for [XCB](http://xcb.freedesktop.org/)
-
-Also I was made aware deep in development of
-[i3-renameworkspaces](https://github.com/mh21/i3-renameworkspaces), a perl
-program that does almost exactly what this does, so you might want to check that
-out also.
+wrappers for [XCB](http://xcb.freedesktop.org/).

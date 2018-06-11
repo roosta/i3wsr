@@ -7,7 +7,9 @@ before_script:
   - "sleep 3"
   - "i3 -c /dev/null &"
   - "gpick &"
+  - "sleep 3"
   - "xterm &"
+  - "sleep 3"
   - "DISPLAY=:99.0 i3-msg [class=\"XTerm\"] floating enable"
 language: rust
 sudo: true

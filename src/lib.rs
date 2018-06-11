@@ -191,7 +191,7 @@ mod tests {
                 }
             }
         }
-       assert_eq!(name, String::from("1 Gpick|XTerm"));
+        assert_eq!(name, String::from("1 Gpick|XTerm"));
     }
 
     #[test]
@@ -211,9 +211,11 @@ mod tests {
             }
             for node in &workspace.floating_nodes {
                 println!("{:#?}", node);
-                match node.window {
-                    Some(w) => ids.push(w as u32),
-                    None => ()
+                for n in &node.nodes {
+                    match n.window {
+                        Some(w) => ids.push(w as u32),
+                        None => ()
+                    }
                 }
             }
         };
@@ -233,7 +235,21 @@ mod tests {
         for workspace in workspaces {
             result.push(super::get_classes(&workspace, &x_conn).unwrap());
         }
-        let expected = vec![vec![], vec![String::from("Gpick")]];
+        let expected = vec![vec![], vec!["Gpick", "XTerm"]];
         assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn get_ids() {
+        env::set_var("DISPLAY", ":99.0");
+        let mut i3_conn = super::I3Connection::connect().unwrap();
+        let tree = i3_conn.get_tree().unwrap();
+        let workspaces = super::get_workspaces(&tree);
+        let mut result: Vec<Vec<u32>> = Vec::new();
+        for workspace in workspaces {
+            result.push(super::get_ids(&mut vec![workspace.nodes.iter().collect()]));
+            result.push(super::get_ids(&mut vec![workspace.floating_nodes.iter().collect()]));
+        }
+        assert_eq!(result, vec![vec![], vec![], vec![2097178], vec![10485794]]);
     }
 }

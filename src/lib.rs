@@ -210,7 +210,6 @@ mod tests {
                 }
             }
             for node in &workspace.floating_nodes {
-                println!("{:#?}", node);
                 for n in &node.nodes {
                     match n.window {
                         Some(w) => ids.push(w as u32),
@@ -250,6 +249,7 @@ mod tests {
             result.push(super::get_ids(&mut vec![workspace.nodes.iter().collect()]));
             result.push(super::get_ids(&mut vec![workspace.floating_nodes.iter().collect()]));
         }
-        assert_eq!(result, vec![vec![], vec![], vec![2097178], vec![10485794]]);
+        let result: usize = result.iter().filter(|v| !v.is_empty()).count();
+        assert_eq!(result, 2);
     }
 }

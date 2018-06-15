@@ -28,6 +28,9 @@ cargo build --release
 
 Then place the built binary, located at `target/release/i3wsr`, somewhere on your `$path`.
 
+### Arch linux
+If you're running Arch you can install either [stable](https://aur.archlinux.org/packages/i3wsr/), or [lastest](https://aur.archlinux.org/packages/i3wsr-git/) from AUR thanks to reddit user [u/OniTux](https://www.reddit.com/user/OniTux).
+
 ## Usage
 Just launch the program and it'll listen for events if you are running I3.
 Another option is to put something like this in your i3 config

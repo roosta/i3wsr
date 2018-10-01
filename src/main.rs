@@ -1,11 +1,11 @@
 extern crate i3ipc;
 extern crate i3wsr;
 extern crate xcb;
-use i3ipc::I3EventListener;
-use std::process;
-use i3ipc::Subscription;
 use i3ipc::event::Event;
 use i3ipc::I3Connection;
+use i3ipc::I3EventListener;
+use i3ipc::Subscription;
+use std::process;
 
 /// Why? cause I'm learning. Also lets me handle these spesific errors which
 /// should exit the program
@@ -37,17 +37,17 @@ fn main() {
                 if let Err(error) = i3wsr::handle_window_event(e, &x_conn, &mut i3_conn) {
                     eprintln!("handle_window_event error: {}", error);
                 }
-            },
+            }
             Ok(Event::WorkspaceEvent(e)) => {
                 if let Err(error) = i3wsr::handle_ws_event(e, &x_conn, &mut i3_conn) {
                     eprintln!("handle_ws_event error: {}", error);
                 }
-            },
+            }
             Err(e) => {
                 eprintln!("Error: {}", e);
                 process::exit(1);
-            },
-            _ => ()
+            }
+            _ => (),
         }
     }
 }

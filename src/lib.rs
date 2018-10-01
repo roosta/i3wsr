@@ -1,15 +1,15 @@
 extern crate i3ipc;
 extern crate xcb;
 
-use i3ipc::event::WindowEventInfo;
-use i3ipc::event::WorkspaceEventInfo;
 use i3ipc::event::inner::WindowChange;
 use i3ipc::event::inner::WorkspaceChange;
+use i3ipc::event::WindowEventInfo;
+use i3ipc::event::WorkspaceEventInfo;
+use i3ipc::reply::Node;
+use i3ipc::reply::NodeType;
 use i3ipc::I3Connection;
 use std::error::Error;
 use xcb::xproto;
-use i3ipc::reply::Node;
-use i3ipc::reply::NodeType;
 
 /// Return the window class based on id.
 /// Source: https://stackoverflow.com/questions/44833160/how-do-i-get-the-x-window-class-given-a-window-id-with-rust-xcb
@@ -54,10 +54,15 @@ fn get_class(conn: &xcb::Connection, id: u32) -> Result<String, Box<Error>> {
 /// not using this but makes the program much more forgiving.
 fn _is_normal(conn: &xcb::Connection, id: u32) -> Result<bool, Box<Error>> {
     let window: xproto::Window = id;
-    let ident = xcb::intern_atom(&conn, true, "_NET_WM_WINDOW_TYPE").get_reply()?.atom();
-    let reply = xproto::get_property(&conn, false, window, ident, xproto::ATOM_ATOM, 0, 1024).get_reply()?;
+    let ident = xcb::intern_atom(&conn, true, "_NET_WM_WINDOW_TYPE")
+        .get_reply()?
+        .atom();
+    let reply = xproto::get_property(&conn, false, window, ident, xproto::ATOM_ATOM, 0, 1024)
+        .get_reply()?;
     let actual: u32 = reply.value()[0];
-    let expected: u32 = xcb::intern_atom(&conn, true, "_NET_WM_WINDOW_TYPE_NORMAL").get_reply()?.atom();
+    let expected: u32 = xcb::intern_atom(&conn, true, "_NET_WM_WINDOW_TYPE_NORMAL")
+        .get_reply()?
+        .atom();
     return Ok(actual == expected);
 }
 
@@ -70,8 +75,8 @@ fn get_workspaces(tree: &Node) -> Vec<&Node> {
                 match workspace.nodetype {
                     NodeType::Workspace => {
                         out.push(&workspace);
-                    },
-                    _ => ()
+                    }
+                    _ => (),
                 }
             }
         }
@@ -92,14 +97,14 @@ fn get_ids(nodes: &mut Vec<Vec<&Node>>) -> Vec<u32> {
                     match n.window {
                         Some(w) => {
                             window_ids.push(w as u32);
-                        },
-                        None => ()
+                        }
+                        None => (),
                     }
                 }
-            },
-            None => break
+            }
+            None => break,
         };
-    };
+    }
     window_ids
 }
 
@@ -124,10 +129,10 @@ pub fn update_tree(x_conn: &xcb::Connection, i3_conn: &mut I3Connection) -> Resu
     let workspaces = get_workspaces(&tree);
     for workspace in &workspaces {
         let classes = get_classes(&workspace, &x_conn)?.join("|");
-        let old: String = workspace
-            .name
-            .to_owned()
-            .ok_or(format!("Failed to get workspace name for workspace: {:#?}", workspace))?;
+        let old: String = workspace.name.to_owned().ok_or(format!(
+            "Failed to get workspace name for workspace: {:#?}",
+            workspace
+        ))?;
         let old_split: Vec<&str> = old.split(' ').collect();
         let new = if classes.is_empty() {
             format!("{}", old_split[0])
@@ -143,31 +148,39 @@ pub fn update_tree(x_conn: &xcb::Connection, i3_conn: &mut I3Connection) -> Resu
 }
 
 /// handles new and close window events, to set the workspace name based on content
-pub fn handle_window_event(e: WindowEventInfo, x_conn: &xcb::Connection, i3_conn: &mut I3Connection) -> Result<(), Box<Error>> {
+pub fn handle_window_event(
+    e: WindowEventInfo,
+    x_conn: &xcb::Connection,
+    i3_conn: &mut I3Connection,
+) -> Result<(), Box<Error>> {
     match e.change {
         WindowChange::New | WindowChange::Close | WindowChange::Move => {
             update_tree(x_conn, i3_conn)?;
-        },
-        _ => ()
+        }
+        _ => (),
     }
     Ok(())
 }
 
 /// handles ws events,
-pub fn handle_ws_event(e: WorkspaceEventInfo, x_conn: &xcb::Connection, i3_conn: &mut I3Connection) -> Result<(), Box<Error>> {
+pub fn handle_ws_event(
+    e: WorkspaceEventInfo,
+    x_conn: &xcb::Connection,
+    i3_conn: &mut I3Connection,
+) -> Result<(), Box<Error>> {
     match e.change {
         WorkspaceChange::Empty | WorkspaceChange::Focus => {
             update_tree(x_conn, i3_conn)?;
-        },
-        _ => ()
+        }
+        _ => (),
     }
     Ok(())
 }
 
 #[cfg(test)]
 mod tests {
-    use std::env;
     use i3ipc::reply::NodeType;
+    use std::env;
 
     #[test]
     fn connection_tree() {
@@ -176,10 +189,10 @@ mod tests {
         let mut i3_conn = super::I3Connection::connect().unwrap();
         match super::update_tree(&x_conn, &mut i3_conn) {
             Ok(_) => (),
-            Err(_) => assert!(false)
+            Err(_) => assert!(false),
         };
         let tree = i3_conn.get_tree().unwrap();
-        let mut name:String = String::new();
+        let mut name: String = String::new();
         for output in &tree.nodes {
             for container in &output.nodes {
                 for workspace in &container.nodes {
@@ -189,8 +202,8 @@ mod tests {
                             if ws_n == Some(String::from("1 Gpick|XTerm")) {
                                 name = ws_n.unwrap()
                             }
-                        },
-                        _ => ()
+                        }
+                        _ => (),
                     }
                 }
             }
@@ -210,21 +223,23 @@ mod tests {
             for node in &workspace.nodes {
                 match node.window {
                     Some(w) => ids.push(w as u32),
-                    None => ()
+                    None => (),
                 }
             }
             for node in &workspace.floating_nodes {
                 for n in &node.nodes {
                     match n.window {
                         Some(w) => ids.push(w as u32),
-                        None => ()
+                        None => (),
                     }
                 }
             }
-        };
-        let result: Vec<String> = ids.iter().map(|id| super::get_class(&x_conn, *id).unwrap()).collect();
+        }
+        let result: Vec<String> = ids
+            .iter()
+            .map(|id| super::get_class(&x_conn, *id).unwrap())
+            .collect();
         assert_eq!(result, vec!["Gpick", "XTerm"]);
-
     }
 
     #[test]
@@ -251,7 +266,9 @@ mod tests {
         let mut result: Vec<Vec<u32>> = Vec::new();
         for workspace in workspaces {
             result.push(super::get_ids(&mut vec![workspace.nodes.iter().collect()]));
-            result.push(super::get_ids(&mut vec![workspace.floating_nodes.iter().collect()]));
+            result.push(super::get_ids(&mut vec![
+                workspace.floating_nodes.iter().collect(),
+            ]));
         }
         let result: usize = result.iter().filter(|v| !v.is_empty()).count();
         assert_eq!(result, 2);

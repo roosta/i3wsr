@@ -5,49 +5,33 @@ extern crate xcb;
 
 extern crate i3wsr;
 
-use std::{fmt::Debug, process::exit};
+extern crate exitfailure;
+use exitfailure::ExitFailure;
 
-/// Why? cause I'm learning. Also lets me handle these spesific errors which
-/// should exit the program
-fn unwrap_connection<T, E: Debug>(obj: Result<T, E>) -> T {
-    match obj {
-        Ok(val) => val,
-        Err(e) => {
-            eprintln!("Connection error: {:?}", e);
-            exit(1);
-        }
-    }
-}
-
-fn main() {
-    let mut listener = unwrap_connection(I3EventListener::connect());
-    let mut i3_conn = unwrap_connection(I3Connection::connect());
+fn main() -> Result<(), ExitFailure> {
+    let mut listener = I3EventListener::connect()?;
     let subs = [Subscription::Window, Subscription::Workspace];
-    unwrap_connection(listener.subscribe(&subs));
-    let (x_conn, _) = unwrap_connection(xcb::Connection::connect(None));
+    listener.subscribe(&subs)?;
 
-    if let Err(error) = i3wsr::update_tree(&x_conn, &mut i3_conn) {
-        eprintln!("Failed initial tree update with error: {}", error);
-        exit(1);
-    }
+    let (x_conn, _) = xcb::Connection::connect(None)?;
+    let mut i3_conn = I3Connection::connect()?;
+    i3wsr::update_tree(&x_conn, &mut i3_conn)?;
 
     for event in listener.listen() {
-        match event {
-            Ok(Event::WindowEvent(e)) => {
+        match event? {
+            Event::WindowEvent(e) => {
                 if let Err(error) = i3wsr::handle_window_event(&e, &x_conn, &mut i3_conn) {
                     eprintln!("handle_window_event error: {}", error);
                 }
             }
-            Ok(Event::WorkspaceEvent(e)) => {
+            Event::WorkspaceEvent(e) => {
                 if let Err(error) = i3wsr::handle_ws_event(&e, &x_conn, &mut i3_conn) {
                     eprintln!("handle_ws_event error: {}", error);
                 }
             }
-            Err(e) => {
-                eprintln!("Error: {}", e);
-                exit(1);
-            }
-            _ => (),
+            _ => {}
         }
     }
+
+    Ok(())
 }

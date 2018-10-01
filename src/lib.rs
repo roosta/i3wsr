@@ -11,11 +11,22 @@ use i3ipc::{
     I3Connection,
 };
 
-use std::error::Error;
+#[macro_use]
+extern crate failure_derive;
+extern crate failure;
+use failure::Error;
+
+#[derive(Debug, Fail)]
+enum LookupError {
+    #[fail(display = "Failed to get a class for window id: {}", _0)]
+    WindowClass(u32),
+    #[fail(display = "Failed to get name for workspace: {:#?}", _0)]
+    WorkspaceName(Box<Node>),
+}
 
 /// Return the window class based on id.
 /// Source: https://stackoverflow.com/questions/44833160/how-do-i-get-the-x-window-class-given-a-window-id-with-rust-xcb
-fn get_class(conn: &xcb::Connection, id: u32) -> Result<String, Box<Error>> {
+fn get_class(conn: &xcb::Connection, id: u32) -> Result<String, Error> {
     let window: xproto::Window = id;
     let long_length: u32 = 8;
     let mut long_offset: u32 = 0;
@@ -44,9 +55,11 @@ fn get_class(conn: &xcb::Connection, id: u32) -> Result<String, Box<Error>> {
     }
     let result = String::from_utf8(buf)?;
     let mut results: Vec<&str> = result.split('\0').collect();
-    let error_message = format!("Failed to get a class for window id: {}", id);
     results.pop();
-    Ok(results.last().ok_or(error_message)?.to_string())
+    Ok(results
+        .last()
+        .ok_or_else(|| LookupError::WindowClass(id))?
+        .to_string())
 }
 
 /// Checks if window is of type normal. The problem with this is that not all
@@ -54,7 +67,7 @@ fn get_class(conn: &xcb::Connection, id: u32) -> Result<String, Box<Error>> {
 /// type is normal, the class returned will be the same regardless of type, and
 /// it won't trigger a change. We do end up doing some redundant calculations by
 /// not using this but makes the program much more forgiving.
-fn _is_normal(conn: &xcb::Connection, id: u32) -> Result<bool, Box<Error>> {
+fn _is_normal(conn: &xcb::Connection, id: u32) -> Result<bool, Error> {
     let window: xproto::Window = id;
     let ident = xcb::intern_atom(&conn, true, "_NET_WM_WINDOW_TYPE")
         .get_reply()?
@@ -69,13 +82,13 @@ fn _is_normal(conn: &xcb::Connection, id: u32) -> Result<bool, Box<Error>> {
 }
 
 /// return a collection of workspace nodes
-fn get_workspaces(tree: &Node) -> Vec<&Node> {
-    let mut out: Vec<&Node> = Vec::new();
-    for output in &tree.nodes {
-        for container in &output.nodes {
-            for workspace in &container.nodes {
+fn get_workspaces(tree: Node) -> Vec<Node> {
+    let mut out = Vec::new();
+    for output in tree.nodes {
+        for container in output.nodes {
+            for workspace in container.nodes {
                 if let NodeType::Workspace = workspace.nodetype {
-                    out.push(&workspace);
+                    out.push(workspace);
                 }
             }
         }
@@ -100,7 +113,7 @@ fn get_ids(nodes: &mut Vec<Vec<&Node>>) -> Vec<u32> {
 }
 
 /// Return a collection of window classes
-fn get_classes(workspace: &Node, x_conn: &xcb::Connection) -> Result<Vec<String>, Box<Error>> {
+fn get_classes(workspace: &Node, x_conn: &xcb::Connection) -> Result<Vec<String>, Error> {
     let window_ids: Vec<u32> = {
         let mut f: Vec<u32> = get_ids(&mut vec![workspace.floating_nodes.iter().collect()]);
         let mut n: Vec<u32> = get_ids(&mut vec![workspace.nodes.iter().collect()]);
@@ -115,17 +128,15 @@ fn get_classes(workspace: &Node, x_conn: &xcb::Connection) -> Result<Vec<String>
 }
 
 /// Update all workspace names in tree
-pub fn update_tree(x_conn: &xcb::Connection, i3_conn: &mut I3Connection) -> Result<(), Box<Error>> {
+pub fn update_tree(x_conn: &xcb::Connection, i3_conn: &mut I3Connection) -> Result<(), Error> {
     let tree = i3_conn.get_tree()?;
-    let workspaces = get_workspaces(&tree);
-    for workspace in &workspaces {
+    let workspaces = get_workspaces(tree);
+    for workspace in workspaces {
         let classes = get_classes(&workspace, &x_conn)?.join("|");
-        let old: String = workspace.name.to_owned().ok_or_else(|| {
-            format!(
-                "Failed to get workspace name for workspace: {:#?}",
-                workspace
-            )
-        })?;
+        let old: String = workspace
+            .name
+            .to_owned()
+            .ok_or_else(|| LookupError::WorkspaceName(Box::new(workspace)))?;
         let old_split: Vec<&str> = old.split(' ').collect();
         let new = if classes.is_empty() {
             old_split[0].to_owned()
@@ -145,7 +156,7 @@ pub fn handle_window_event(
     e: &WindowEventInfo,
     x_conn: &xcb::Connection,
     i3_conn: &mut I3Connection,
-) -> Result<(), Box<Error>> {
+) -> Result<(), Error> {
     match e.change {
         WindowChange::New | WindowChange::Close | WindowChange::Move => {
             update_tree(x_conn, i3_conn)?;
@@ -160,7 +171,7 @@ pub fn handle_ws_event(
     e: &WorkspaceEventInfo,
     x_conn: &xcb::Connection,
     i3_conn: &mut I3Connection,
-) -> Result<(), Box<Error>> {
+) -> Result<(), Error> {
     match e.change {
         WorkspaceChange::Empty | WorkspaceChange::Focus => {
             update_tree(x_conn, i3_conn)?;
@@ -180,10 +191,7 @@ mod tests {
         env::set_var("DISPLAY", ":99.0");
         let (x_conn, _) = super::xcb::Connection::connect(None).unwrap();
         let mut i3_conn = super::I3Connection::connect().unwrap();
-        match super::update_tree(&x_conn, &mut i3_conn) {
-            Ok(_) => (),
-            Err(_) => assert!(false),
-        };
+        assert!(super::update_tree(&x_conn, &mut i3_conn).is_ok());
         let tree = i3_conn.get_tree().unwrap();
         let mut name: String = String::new();
         for output in &tree.nodes {
@@ -208,7 +216,7 @@ mod tests {
         let mut i3_conn = super::I3Connection::connect().unwrap();
         let tree = i3_conn.get_tree().unwrap();
         let mut ids: Vec<u32> = Vec::new();
-        let workspaces = super::get_workspaces(&tree);
+        let workspaces = super::get_workspaces(tree);
         for workspace in &workspaces {
             for node in &workspace.nodes {
                 if let Some(w) = node.window {
@@ -236,7 +244,7 @@ mod tests {
         let (x_conn, _) = super::xcb::Connection::connect(None).unwrap();
         let mut i3_conn = super::I3Connection::connect().unwrap();
         let tree = i3_conn.get_tree().unwrap();
-        let workspaces = super::get_workspaces(&tree);
+        let workspaces = super::get_workspaces(tree);
         let mut result: Vec<Vec<String>> = Vec::new();
         for workspace in workspaces {
             result.push(super::get_classes(&workspace, &x_conn).unwrap());
@@ -250,7 +258,7 @@ mod tests {
         env::set_var("DISPLAY", ":99.0");
         let mut i3_conn = super::I3Connection::connect().unwrap();
         let tree = i3_conn.get_tree().unwrap();
-        let workspaces = super::get_workspaces(&tree);
+        let workspaces = super::get_workspaces(tree);
         let mut result: Vec<Vec<u32>> = Vec::new();
         for workspace in workspaces {
             result.push(super::get_ids(&mut vec![workspace.nodes.iter().collect()]));

@@ -129,7 +129,11 @@ pub fn update_tree(x_conn: &xcb::Connection, i3_conn: &mut I3Connection) -> Resu
             .to_owned()
             .ok_or(format!("Failed to get workspace name for workspace: {:#?}", workspace))?;
         let old_split: Vec<&str> = old.split(' ').collect();
-        let new = format!("{} {}", old_split[0], classes);
+        let new = if classes.is_empty() {
+            format!("{}", old_split[0])
+        } else {
+            format!("{} {}", old_split[0], classes)
+        };
         if old != new {
             let command = format!("rename workspace \"{}\" to \"{}\"", old, new);
             i3_conn.run_command(&command)?;

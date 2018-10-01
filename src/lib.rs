@@ -1,15 +1,17 @@
-extern crate i3ipc;
 extern crate xcb;
-
-use i3ipc::event::inner::WindowChange;
-use i3ipc::event::inner::WorkspaceChange;
-use i3ipc::event::WindowEventInfo;
-use i3ipc::event::WorkspaceEventInfo;
-use i3ipc::reply::Node;
-use i3ipc::reply::NodeType;
-use i3ipc::I3Connection;
-use std::error::Error;
 use xcb::xproto;
+
+extern crate i3ipc;
+use i3ipc::{
+    event::{
+        inner::{WindowChange, WorkspaceChange},
+        WindowEventInfo, WorkspaceEventInfo,
+    },
+    reply::{Node, NodeType},
+    I3Connection,
+};
+
+use std::error::Error;
 
 /// Return the window class based on id.
 /// Source: https://stackoverflow.com/questions/44833160/how-do-i-get-the-x-window-class-given-a-window-id-with-rust-xcb

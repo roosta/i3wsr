@@ -100,13 +100,15 @@ fn get_workspaces(tree: Node) -> Vec<Node> {
 }
 
 /// get window ids for any depth collection of nodes
-fn get_ids(mut nodes: Vec<&Node>) -> Vec<u32> {
+fn get_ids(mut nodes: Vec<Vec<&Node>>) -> Vec<u32> {
     let mut window_ids = Vec::new();
 
-    while let Some(n) = nodes.pop() {
-        nodes.append(&mut n.nodes.iter().collect());
-        if let Some(w) = n.window {
-            window_ids.push(w as u32);
+    while let Some(next) = nodes.pop() {
+        for n in next {
+            nodes.push(n.nodes.iter().collect());
+            if let Some(w) = n.window {
+                window_ids.push(w as u32);
+            }
         }
     }
 
@@ -116,8 +118,8 @@ fn get_ids(mut nodes: Vec<&Node>) -> Vec<u32> {
 /// Return a collection of window classes
 fn get_classes(workspace: &Node, x_conn: &xcb::Connection) -> Result<Vec<String>, Error> {
     let window_ids = {
-        let mut f = get_ids(workspace.floating_nodes.iter().collect());
-        let mut n = get_ids(workspace.nodes.iter().collect());
+        let mut f = get_ids(vec![workspace.floating_nodes.iter().collect()]);
+        let mut n = get_ids(vec![workspace.nodes.iter().collect()]);
         n.append(&mut f);
         n
     };
@@ -270,8 +272,8 @@ mod tests {
         let workspaces = super::get_workspaces(tree);
         let mut result: Vec<Vec<u32>> = Vec::new();
         for workspace in workspaces {
-            result.push(super::get_ids(workspace.nodes.iter().collect()));
-            result.push(super::get_ids(workspace.floating_nodes.iter().collect()));
+            result.push(super::get_ids(vec![workspace.nodes.iter().collect()]));
+            result.push(super::get_ids(vec![workspace.floating_nodes.iter().collect()]));
         }
         let result: usize = result.iter().filter(|v| !v.is_empty()).count();
         assert_eq!(result, 2);

@@ -63,7 +63,7 @@ fn _is_normal(conn: &xcb::Connection, id: u32) -> Result<bool, Box<Error>> {
     let expected: u32 = xcb::intern_atom(&conn, true, "_NET_WM_WINDOW_TYPE_NORMAL")
         .get_reply()?
         .atom();
-    return Ok(actual == expected);
+    Ok(actual == expected)
 }
 
 /// return a collection of workspace nodes
@@ -72,11 +72,8 @@ fn get_workspaces(tree: &Node) -> Vec<&Node> {
     for output in &tree.nodes {
         for container in &output.nodes {
             for workspace in &container.nodes {
-                match workspace.nodetype {
-                    NodeType::Workspace => {
-                        out.push(&workspace);
-                    }
-                    _ => (),
+                if let NodeType::Workspace = workspace.nodetype {
+                    out.push(&workspace);
                 }
             }
         }
@@ -87,23 +84,15 @@ fn get_workspaces(tree: &Node) -> Vec<&Node> {
 /// get window ids for any depth collection of nodes
 fn get_ids(nodes: &mut Vec<Vec<&Node>>) -> Vec<u32> {
     let mut window_ids: Vec<u32> = Vec::new();
-    loop {
-        match nodes.pop() {
-            Some(next) => {
-                for n in next {
-                    if !n.nodes.is_empty() {
-                        nodes.push(n.nodes.iter().collect());
-                    }
-                    match n.window {
-                        Some(w) => {
-                            window_ids.push(w as u32);
-                        }
-                        None => (),
-                    }
-                }
+    while let Some(next) = nodes.pop() {
+        for n in next {
+            if !n.nodes.is_empty() {
+                nodes.push(n.nodes.iter().collect());
             }
-            None => break,
-        };
+            if let Some(w) = n.window {
+                window_ids.push(w as u32);
+            }
+        }
     }
     window_ids
 }
@@ -129,13 +118,15 @@ pub fn update_tree(x_conn: &xcb::Connection, i3_conn: &mut I3Connection) -> Resu
     let workspaces = get_workspaces(&tree);
     for workspace in &workspaces {
         let classes = get_classes(&workspace, &x_conn)?.join("|");
-        let old: String = workspace.name.to_owned().ok_or(format!(
-            "Failed to get workspace name for workspace: {:#?}",
-            workspace
-        ))?;
+        let old: String = workspace.name.to_owned().ok_or_else(|| {
+            format!(
+                "Failed to get workspace name for workspace: {:#?}",
+                workspace
+            )
+        })?;
         let old_split: Vec<&str> = old.split(' ').collect();
         let new = if classes.is_empty() {
-            format!("{}", old_split[0])
+            old_split[0].to_owned()
         } else {
             format!("{} {}", old_split[0], classes)
         };
@@ -149,7 +140,7 @@ pub fn update_tree(x_conn: &xcb::Connection, i3_conn: &mut I3Connection) -> Resu
 
 /// handles new and close window events, to set the workspace name based on content
 pub fn handle_window_event(
-    e: WindowEventInfo,
+    e: &WindowEventInfo,
     x_conn: &xcb::Connection,
     i3_conn: &mut I3Connection,
 ) -> Result<(), Box<Error>> {
@@ -164,7 +155,7 @@ pub fn handle_window_event(
 
 /// handles ws events,
 pub fn handle_ws_event(
-    e: WorkspaceEventInfo,
+    e: &WorkspaceEventInfo,
     x_conn: &xcb::Connection,
     i3_conn: &mut I3Connection,
 ) -> Result<(), Box<Error>> {
@@ -196,14 +187,11 @@ mod tests {
         for output in &tree.nodes {
             for container in &output.nodes {
                 for workspace in &container.nodes {
-                    match workspace.nodetype {
-                        NodeType::Workspace => {
-                            let ws_n = workspace.name.to_owned();
-                            if ws_n == Some(String::from("1 Gpick|XTerm")) {
-                                name = ws_n.unwrap()
-                            }
+                    if let NodeType::Workspace = workspace.nodetype {
+                        let ws_n = workspace.name.to_owned();
+                        if ws_n == Some(String::from("1 Gpick|XTerm")) {
+                            name = ws_n.unwrap()
                         }
-                        _ => (),
                     }
                 }
             }
@@ -221,16 +209,14 @@ mod tests {
         let workspaces = super::get_workspaces(&tree);
         for workspace in &workspaces {
             for node in &workspace.nodes {
-                match node.window {
-                    Some(w) => ids.push(w as u32),
-                    None => (),
+                if let Some(w) = node.window {
+                    ids.push(w as u32);
                 }
             }
             for node in &workspace.floating_nodes {
                 for n in &node.nodes {
-                    match n.window {
-                        Some(w) => ids.push(w as u32),
-                        None => (),
+                    if let Some(w) = n.window {
+                        ids.push(w as u32);
                     }
                 }
             }

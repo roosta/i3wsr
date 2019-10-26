@@ -19,6 +19,8 @@ xcb = "0.8"
 exitfailure = "0.5.1"
 failure = "0.1.2"
 failure_derive = "0.1.2"
+lazy_static = "1.4.0"
+clap = "2.33.0"
 
 [dependencies.i3ipc]
 version = "0.8.2"

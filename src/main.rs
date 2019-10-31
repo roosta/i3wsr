@@ -18,7 +18,7 @@ fn main() -> Result<(), ExitFailure> {
        .author("Daniel Berg")
         .arg(Arg::with_name("icons")
             .long("icons")
-            .help("Sets icons to be used (e.g. awesome)")
+            .help("Sets icons to be used (e.g. awesome (requires font-awesome) or path to toml file)")
             .takes_value(true))
         .arg(Arg::with_name("no-names")
             .long("no-names")
@@ -28,7 +28,7 @@ fn main() -> Result<(), ExitFailure> {
     let icons = matches.value_of("icons").unwrap_or("").to_string();
     let no_names = matches.is_present("no-names");
     let options = Options {
-        icons: icons,
+        icons: i3wsr::icons::get_icons(&icons),
         names: !no_names,
     };
 

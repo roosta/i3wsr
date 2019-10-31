@@ -16,12 +16,18 @@ extern crate failure_derive;
 extern crate failure;
 use failure::Error;
 
+use std::collections::HashMap as Map;
+
+extern crate serde;
+
 #[macro_use]
 extern crate lazy_static;
-mod icons;
+pub mod icons;
+
+extern crate toml;
 
 pub struct Options {
-    pub icons: String,
+    pub icons: Map<String, String>,
     pub names: bool,
 }
 
@@ -31,16 +37,6 @@ enum LookupError {
     WindowClass(u32),
     #[fail(display = "Failed to get name for workspace: {:#?}", _0)]
     WorkspaceName(Box<Node>),
-}
-
-fn get_icon(options: &str, class: &str) -> Option<String> {
-    match icons::get_icons(options) {
-        Some(icons) => match icons.get(class) {
-            Some(icon) => Some(icon.to_string()),
-            None => None,
-        },
-        None => None,
-    }
 }
 
 /// Return the window class based on id.
@@ -76,8 +72,7 @@ fn get_class(conn: &xcb::Connection, id: u32, options: &Options) -> Result<Strin
     let mut results = result.split('\0');
     results.next_back();
     let mut results_with_icons = results.map(|class| {
-        let icon = get_icon(&options.icons, class);
-        match icon {
+        match options.icons.get(class) {
             Some(icon) => {
                 if options.names {
                     format!(" {} {} ", icon, class)

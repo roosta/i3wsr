@@ -5,19 +5,27 @@ use serde::Deserialize;
 use failure::Error;
 
 lazy_static! {
-    pub static ref EMPTY_CLASSES_MAP: Map<String, String> = Map::new();
+    pub static ref EMPTY_ALIASES_MAP: Map<String, String> = Map::new();
 }
 
 #[derive(Deserialize)]
-pub struct TomlConfig {
-    pub icons: Map<String, char>,
-    pub classes: Map<String, String>,
+struct TomlDeserializableConfig {
+    icons: Option<Map<String, char>>,
+    aliases: Option<Map<String, String>>,
 }
 
-pub fn read_toml_config(filename: &str) -> Result<TomlConfig, Error> {
+pub struct Config {
+    pub icons: Map<String, char>,
+    pub aliases: Map<String, String>,
+}
+
+pub fn read_toml_config(filename: &str) -> Result<Config, Error> {
     let mut file = File::open(filename)?;
     let mut buffer = String::new();
     file.read_to_string(&mut buffer)?;
-    let config: TomlConfig = toml::from_str(&buffer)?;
-    Ok(config)
+    let config: TomlDeserializableConfig = toml::from_str(&buffer)?;
+    Ok(Config {
+        icons: config.icons.unwrap_or(super::icons::NONE.clone()),
+        aliases: config.aliases.unwrap_or(EMPTY_ALIASES_MAP.clone()),
+    })
 }

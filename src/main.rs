@@ -34,17 +34,20 @@ fn main() -> Result<(), ExitFailure> {
     let no_names = matches.is_present("no-names");
     let options = match matches.value_of("config") {
         Some(filename) => {
-            let file_config = i3wsr::config::read_toml_config(filename).unwrap();
+            let file_config = match i3wsr::config::read_toml_config(filename) {
+                Ok(config) => config,
+                Err(e) => panic!("Could not parse config file\n {}", e)
+            };
             i3wsr::Options {
                 icons: file_config.icons.into_iter().chain(i3wsr::icons::get_icons(&icons)).collect(),
-                classes: file_config.classes,
+                aliases: file_config.aliases,
                 names: !no_names,
             }
         },
         None => {
             i3wsr::Options {
                 icons: i3wsr::icons::get_icons(&icons),
-                classes: i3wsr::config::EMPTY_CLASSES_MAP.clone(),
+                aliases: i3wsr::config::EMPTY_ALIASES_MAP.clone(),
                 names: !no_names,
             }
         }

@@ -7,5 +7,6 @@ Thunderbird = ""
 # smile emoji
 MyNiceProgram = "😛"
 
-[classes]
+[aliases]
 TelegramDesktop = "Telegram"
+"Org.gnome.Nautilus" = "Nautilus"

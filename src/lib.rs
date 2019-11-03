@@ -30,7 +30,7 @@ pub mod config;
 
 pub struct Options {
     pub icons: Map<String, char>,
-    pub classes: Map<String, String>,
+    pub aliases: Map<String, String>,
     pub names: bool,
 }
 
@@ -75,7 +75,7 @@ fn get_class(conn: &xcb::Connection, id: u32, options: &Options) -> Result<Strin
     let mut results = result.split('\0');
     results.next_back();
     let mut results_with_icons = results.map(|class| {
-        let class_display_name = match options.classes.get(class) {
+        let class_display_name = match options.aliases.get(class) {
             Some(alias) => alias,
             None => class,
         };

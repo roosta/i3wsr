@@ -39,6 +39,52 @@ Another option is to put something like this in your i3 config
 exec_always --no-startup-id exec $HOME/.cargo/bin/i3wsr
 ```
 
+### Options
+
+You can configure icons for the respective classes, a very basic preset for font-awesome is configured, to enable it use the option `--icons awesome` (requires font-awesome to be installed).
+
+If you have icons and don't want the names to be displayed, you can use the `--no-names` flag.
+
+For further customization, use the `--config path_to_file.toml` option. The `toml` file has to fields, `icons` to assign icons to classes, and `aliases` to assign alternative names to be displayed.
+
+Example config can be found in `assets/example_config.toml`
+
+```toml
+[icons]
+# font awesome
+TelegramDesktop = ""
+Firefox = ""
+Alacritty = ""
+Thunderbird = ""
+# smile emoji
+MyNiceProgram = "😛"
+
+[aliases]
+TelegramDesktop = "Telegram"
+"Org.gnome.Nautilus" = "Nautilus"
+```
+
+For an overview of available options
+
+```shell
+$ i3wsr -h
+i3wsr - i3 workspace renamer 1.1.1
+Daniel Berg <mail@roosta.sh>
+
+USAGE:
+    i3wsr [FLAGS] [OPTIONS]
+
+FLAGS:
+    -h, --help        Prints help information
+        --no-names    Set to no to display only icons (if available)
+    -V, --version     Prints version information
+
+OPTIONS:
+    -c, --config <config>    Path to toml config file
+        --icons <icons>      Sets icons to be used [possible values: awesome]
+
+```
+
 ## Configuration
 
 This program depends on numbered workspaces, since we're constantly changing the

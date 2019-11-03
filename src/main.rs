@@ -8,13 +8,14 @@ extern crate i3wsr;
 extern crate exitfailure;
 use exitfailure::ExitFailure;
 
+#[macro_use]
 extern crate clap;
 use clap::{App, Arg};
 
 fn main() -> Result<(), ExitFailure> {
     let matches = App::new("i3wsr - i3 workspace renamer")
-       .version("1.0")
-       .author("Daniel Berg")
+       .version(crate_version!())
+       .author(crate_authors!(",\n"))
         .arg(Arg::with_name("icons")
             .long("icons")
             .help("Sets icons to be used")

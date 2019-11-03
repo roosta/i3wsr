@@ -22,12 +22,15 @@ extern crate serde;
 
 #[macro_use]
 extern crate lazy_static;
-pub mod icons;
 
 extern crate toml;
 
+pub mod icons;
+pub mod config;
+
 pub struct Options {
-    pub icons: Map<String, String>,
+    pub icons: Map<String, char>,
+    pub classes: Map<String, String>,
     pub names: bool,
 }
 
@@ -72,15 +75,19 @@ fn get_class(conn: &xcb::Connection, id: u32, options: &Options) -> Result<Strin
     let mut results = result.split('\0');
     results.next_back();
     let mut results_with_icons = results.map(|class| {
+        let class_display_name = match options.classes.get(class) {
+            Some(alias) => alias,
+            None => class,
+        };
         match options.icons.get(class) {
             Some(icon) => {
                 if options.names {
-                    format!(" {} {} ", icon, class)
+                    format!(" {} {} ", icon, class_display_name)
                 } else {
                     format!(" {} ", icon)
                 }
             }
-            None => format!(" {} ", class),
+            None => format!(" {} ", class_display_name),
         }
     });
 

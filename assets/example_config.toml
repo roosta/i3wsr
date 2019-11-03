@@ -1,0 +1,11 @@
+[icons]
+# font awesome
+TelegramDesktop = ""
+Firefox = ""
+Alacritty = ""
+Thunderbird = ""
+# smile emoji
+MyNiceProgram = "😛"
+
+[classes]
+TelegramDesktop = "Telegram"

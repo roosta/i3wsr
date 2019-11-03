@@ -34,6 +34,16 @@ pub struct Options {
     pub names: bool,
 }
 
+impl Default for Options {
+    fn default() -> Self {
+        Options {
+            icons: icons::NONE.clone(),
+            aliases: config::EMPTY_ALIASES_MAP.clone(),
+            names: true,
+        }
+    }
+}
+
 #[derive(Debug, Fail)]
 enum LookupError {
     #[fail(display = "Failed to get a class for window id: {}", _0)]
@@ -234,7 +244,8 @@ mod tests {
         env::set_var("DISPLAY", ":99.0");
         let (x_conn, _) = super::xcb::Connection::connect(None)?;
         let mut i3_conn = super::I3Connection::connect()?;
-        assert!(super::update_tree(&x_conn, &mut i3_conn).is_ok());
+        let options = super::Options::default();
+        assert!(super::update_tree(&x_conn, &mut i3_conn, &options).is_ok());
         let tree = i3_conn.get_tree()?;
         let mut name: String = String::new();
         for output in &tree.nodes {
@@ -275,9 +286,10 @@ mod tests {
                 }
             }
         }
+        let options = super::Options::default();
         let result: Result<Vec<String>, _> = ids
             .iter()
-            .map(|id| super::get_class(&x_conn, *id))
+            .map(|id| super::get_class(&x_conn, *id, &options))
             .collect();
         assert_eq!(result?, vec!["Gpick", "XTerm"]);
         Ok(())
@@ -291,8 +303,9 @@ mod tests {
         let tree = i3_conn.get_tree()?;
         let workspaces = super::get_workspaces(tree);
         let mut result: Vec<Vec<String>> = Vec::new();
+        let options = super::Options::default();
         for workspace in workspaces {
-            result.push(super::get_classes(&workspace, &x_conn)?);
+            result.push(super::get_classes(&workspace, &x_conn, &options)?);
         }
         let expected = vec![vec![], vec!["Gpick", "XTerm"]];
         assert_eq!(result, expected);

@@ -112,7 +112,7 @@ You can take this a bit further by using a bar that trims the workspace number a
 ```
 
 ## Contributors
-* [Daniel Berg (roosta)](https://github.com/roosta/i3wsr/blob/master/.travis.yml)
+* [Daniel Berg (roosta)](https://github.com/roosta)
 * [Cauê Baasch de Souza (cauebs)](https://github.com/cauebs)
 * [Pedro Scaff (pedroscaff)](https://github.com/pedroscaff)
 

@@ -1,3 +1,5 @@
+services:
+  - xvfb
 before_script:
   - echo "deb http://cz.archive.ubuntu.com/ubuntu xenial main universe" | sudo tee -a /etc/apt/sources.list
   - sudo apt-get update -qq

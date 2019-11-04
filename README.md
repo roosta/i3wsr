@@ -68,7 +68,7 @@ For an overview of available options
 
 ```shell
 $ i3wsr -h
-i3wsr - i3 workspace renamer 1.1.1
+i3wsr - i3 workspace renamer 1.2.0
 Daniel Berg <mail@roosta.sh>
 
 USAGE:
@@ -110,6 +110,11 @@ You can take this a bit further by using a bar that trims the workspace number a
 ```
 [Q] Emacs|Firefox
 ```
+
+## Contributors
+* [Daniel Berg (roosta)](https://github.com/roosta/i3wsr/blob/master/.travis.yml)
+* [Cauê Baasch de Souza (cauebs)](https://github.com/cauebs)
+* [Pedro Scaff (pedroscaff)](https://github.com/pedroscaff)
 
 ## Test environment
 To run the tests `Xvfb` needs to be installed and run:

@@ -1,0 +1,12 @@
+[icons]
+# font awesome
+TelegramDesktop = ""
+Firefox = ""
+Alacritty = ""
+Thunderbird = ""
+# smile emoji
+MyNiceProgram = "😛"
+
+[aliases]
+TelegramDesktop = "Telegram"
+"Org.gnome.Nautilus" = "Nautilus"

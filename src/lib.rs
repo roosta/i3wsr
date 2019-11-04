@@ -16,6 +16,34 @@ extern crate failure_derive;
 extern crate failure;
 use failure::Error;
 
+use std::collections::HashMap as Map;
+
+extern crate serde;
+
+#[macro_use]
+extern crate lazy_static;
+
+extern crate toml;
+
+pub mod icons;
+pub mod config;
+
+pub struct Options {
+    pub icons: Map<String, char>,
+    pub aliases: Map<String, String>,
+    pub names: bool,
+}
+
+impl Default for Options {
+    fn default() -> Self {
+        Options {
+            icons: icons::NONE.clone(),
+            aliases: config::EMPTY_ALIASES_MAP.clone(),
+            names: true,
+        }
+    }
+}
+
 #[derive(Debug, Fail)]
 enum LookupError {
     #[fail(display = "Failed to get a class for window id: {}", _0)]
@@ -26,7 +54,7 @@ enum LookupError {
 
 /// Return the window class based on id.
 /// Source: https://stackoverflow.com/questions/44833160/how-do-i-get-the-x-window-class-given-a-window-id-with-rust-xcb
-fn get_class(conn: &xcb::Connection, id: u32) -> Result<String, Error> {
+fn get_class(conn: &xcb::Connection, id: u32, options: &Options) -> Result<String, Error> {
     let window: xproto::Window = id;
     let long_length: u32 = 8;
     let mut long_offset: u32 = 0;
@@ -56,8 +84,24 @@ fn get_class(conn: &xcb::Connection, id: u32) -> Result<String, Error> {
     let result = String::from_utf8(buf)?;
     let mut results = result.split('\0');
     results.next_back();
+    let mut results_with_icons = results.map(|class| {
+        let class_display_name = match options.aliases.get(class) {
+            Some(alias) => alias,
+            None => class,
+        };
+        match options.icons.get(class) {
+            Some(icon) => {
+                if options.names {
+                    format!(" {} {} ", icon, class_display_name)
+                } else {
+                    format!(" {} ", icon)
+                }
+            }
+            None => format!(" {} ", class_display_name),
+        }
+    });
 
-    Ok(results
+    Ok(results_with_icons
         .next_back()
         .ok_or_else(|| LookupError::WindowClass(id))?
         .to_string())
@@ -116,7 +160,7 @@ fn get_ids(mut nodes: Vec<Vec<&Node>>) -> Vec<u32> {
 }
 
 /// Return a collection of window classes
-fn get_classes(workspace: &Node, x_conn: &xcb::Connection) -> Result<Vec<String>, Error> {
+fn get_classes(workspace: &Node, x_conn: &xcb::Connection, options: &Options) -> Result<Vec<String>, Error> {
     let window_ids = {
         let mut f = get_ids(vec![workspace.floating_nodes.iter().collect()]);
         let mut n = get_ids(vec![workspace.nodes.iter().collect()]);
@@ -126,17 +170,17 @@ fn get_classes(workspace: &Node, x_conn: &xcb::Connection) -> Result<Vec<String>
 
     let mut window_classes = Vec::new();
     for id in window_ids {
-        window_classes.push(get_class(&x_conn, id)?);
+        window_classes.push(get_class(&x_conn, id, options)?);
     }
 
     Ok(window_classes)
 }
 
 /// Update all workspace names in tree
-pub fn update_tree(x_conn: &xcb::Connection, i3_conn: &mut I3Connection) -> Result<(), Error> {
+pub fn update_tree(x_conn: &xcb::Connection, i3_conn: &mut I3Connection, options: &Options) -> Result<(), Error> {
     let tree = i3_conn.get_tree()?;
     for workspace in get_workspaces(tree) {
-        let classes = get_classes(&workspace, &x_conn)?.join("|");
+        let classes = get_classes(&workspace, &x_conn, options)?.join("|");
 
         let old: String = workspace
             .name
@@ -146,7 +190,6 @@ pub fn update_tree(x_conn: &xcb::Connection, i3_conn: &mut I3Connection) -> Resu
         let mut new = old.split(' ').next().unwrap().to_owned();
 
         if !classes.is_empty() {
-            new.push(' ');
             new.push_str(&classes);
         }
 
@@ -163,10 +206,11 @@ pub fn handle_window_event(
     e: &WindowEventInfo,
     x_conn: &xcb::Connection,
     i3_conn: &mut I3Connection,
+    options: &Options,
 ) -> Result<(), Error> {
     match e.change {
         WindowChange::New | WindowChange::Close | WindowChange::Move => {
-            update_tree(x_conn, i3_conn)?;
+            update_tree(x_conn, i3_conn, options)?;
         }
         _ => (),
     }
@@ -178,10 +222,11 @@ pub fn handle_ws_event(
     e: &WorkspaceEventInfo,
     x_conn: &xcb::Connection,
     i3_conn: &mut I3Connection,
+    options: &Options,
 ) -> Result<(), Error> {
     match e.change {
         WorkspaceChange::Empty | WorkspaceChange::Focus => {
-            update_tree(x_conn, i3_conn)?;
+            update_tree(x_conn, i3_conn, options)?;
         }
         _ => (),
     }
@@ -199,7 +244,8 @@ mod tests {
         env::set_var("DISPLAY", ":99.0");
         let (x_conn, _) = super::xcb::Connection::connect(None)?;
         let mut i3_conn = super::I3Connection::connect()?;
-        assert!(super::update_tree(&x_conn, &mut i3_conn).is_ok());
+        let options = super::Options::default();
+        assert!(super::update_tree(&x_conn, &mut i3_conn, &options).is_ok());
         let tree = i3_conn.get_tree()?;
         let mut name: String = String::new();
         for output in &tree.nodes {
@@ -240,9 +286,10 @@ mod tests {
                 }
             }
         }
+        let options = super::Options::default();
         let result: Result<Vec<String>, _> = ids
             .iter()
-            .map(|id| super::get_class(&x_conn, *id))
+            .map(|id| super::get_class(&x_conn, *id, &options))
             .collect();
         assert_eq!(result?, vec!["Gpick", "XTerm"]);
         Ok(())
@@ -256,8 +303,9 @@ mod tests {
         let tree = i3_conn.get_tree()?;
         let workspaces = super::get_workspaces(tree);
         let mut result: Vec<Vec<String>> = Vec::new();
+        let options = super::Options::default();
         for workspace in workspaces {
-            result.push(super::get_classes(&workspace, &x_conn)?);
+            result.push(super::get_classes(&workspace, &x_conn, &options)?);
         }
         let expected = vec![vec![], vec!["Gpick", "XTerm"]];
         assert_eq!(result, expected);

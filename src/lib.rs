@@ -253,14 +253,12 @@ mod tests {
                 for workspace in &container.nodes {
                     if let NodeType::Workspace = workspace.nodetype {
                         let ws_n = workspace.name.to_owned();
-                        if ws_n == Some(String::from("1 Gpick|XTerm")) {
-                            name = ws_n.unwrap();
-                        }
+                        name = ws_n.unwrap();
                     }
                 }
             }
         }
-        assert_eq!(name, String::from("1 Gpick|XTerm"));
+        assert_eq!(name, String::from("1 Gpick | XTerm "));
         Ok(())
     }
 
@@ -291,7 +289,7 @@ mod tests {
             .iter()
             .map(|id| super::get_class(&x_conn, *id, &options))
             .collect();
-        assert_eq!(result?, vec!["Gpick", "XTerm"]);
+        assert_eq!(result?, vec![" Gpick ", " XTerm "]);
         Ok(())
     }
 
@@ -307,7 +305,7 @@ mod tests {
         for workspace in workspaces {
             result.push(super::get_classes(&workspace, &x_conn, &options)?);
         }
-        let expected = vec![vec![], vec!["Gpick", "XTerm"]];
+        let expected = vec![vec![], vec![" Gpick ", " XTerm "]];
         assert_eq!(result, expected);
         Ok(())
     }

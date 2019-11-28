@@ -36,7 +36,10 @@ Just launch the program and it'll listen for events if you are running I3.
 Another option is to put something like this in your i3 config
 
 ```
-exec_always --no-startup-id exec $HOME/.cargo/bin/i3wsr
+# cargo
+exec_always --no-startup-id $HOME/.cargo/bin/i3wsr
+# AUR
+exec_always --no-startup-id /usr/bin/i3wsr
 ```
 
 ### Options

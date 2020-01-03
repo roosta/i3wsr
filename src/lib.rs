@@ -94,12 +94,12 @@ fn get_class(conn: &xcb::Connection, id: u32, options: &Options) -> Result<Strin
         match options.icons.get(class) {
             Some(icon) => {
                 if options.names {
-                    format!(" {} {} ", icon, class_display_name)
+                    format!("{} {}", icon, class_display_name)
                 } else {
-                    format!(" {} ", icon)
+                    format!("{}", icon)
                 }
             }
-            None => format!(" {} ", class_display_name),
+            None => format!("{}", class_display_name),
         }
     });
 
@@ -189,6 +189,11 @@ pub fn update_tree(x_conn: &xcb::Connection, i3_conn: &mut I3Connection, options
         };
 
         let classes = get_classes(&workspace, &x_conn, options)?.join(separator);
+        let classes = if !classes.is_empty() {
+            format!(" {}", classes)
+        } else {
+            classes
+        };
 
         let old: String = workspace
             .name

@@ -185,7 +185,7 @@ pub fn update_tree(x_conn: &xcb::Connection, i3_conn: &mut I3Connection, options
 
         let separator = match options.general.get("separator") {
             Some(s) => s,
-            None => "|"
+            None => " | "
         };
 
         let classes = get_classes(&workspace, &x_conn, options)?.join(separator);
@@ -271,7 +271,7 @@ mod tests {
                 }
             }
         }
-        assert_eq!(name, String::from("1 Gpick | XTerm "));
+        assert_eq!(name, String::from("1 Gpick | XTerm"));
         Ok(())
     }
 
@@ -302,7 +302,7 @@ mod tests {
             .iter()
             .map(|id| super::get_class(&x_conn, *id, &options))
             .collect();
-        assert_eq!(result?, vec![" Gpick ", " XTerm "]);
+        assert_eq!(result?, vec!["Gpick", "XTerm"]);
         Ok(())
     }
 
@@ -318,7 +318,7 @@ mod tests {
         for workspace in workspaces {
             result.push(super::get_classes(&workspace, &x_conn, &options)?);
         }
-        let expected = vec![vec![], vec![" Gpick ", " XTerm "]];
+        let expected = vec![vec![], vec!["Gpick", "XTerm"]];
         assert_eq!(result, expected);
         Ok(())
     }

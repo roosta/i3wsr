@@ -1,9 +1,11 @@
 [icons]
 # font awesome
 TelegramDesktop = ""
-Firefox = ""
+firefox = ""
 Alacritty = ""
+Termite = ""
 Thunderbird = ""
+Gpick = ""
 # smile emoji
 MyNiceProgram = "😛"
 

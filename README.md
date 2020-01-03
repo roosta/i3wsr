@@ -65,6 +65,9 @@ MyNiceProgram = "😛"
 [aliases]
 TelegramDesktop = "Telegram"
 "Org.gnome.Nautilus" = "Nautilus"
+
+[general]
+seperator = ""
 ```
 
 For an overview of available options

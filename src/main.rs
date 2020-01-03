@@ -42,14 +42,16 @@ fn main() -> Result<(), ExitFailure> {
             i3wsr::Options {
                 icons: file_config.icons.into_iter().chain(i3wsr::icons::get_icons(&icons)).collect(),
                 aliases: file_config.aliases,
-                names: !no_names,
+                general: file_config.general,
+                names: !no_names
             }
         },
         None => {
             i3wsr::Options {
                 icons: i3wsr::icons::get_icons(&icons),
-                aliases: i3wsr::config::EMPTY_ALIASES_MAP.clone(),
-                names: !no_names,
+                aliases: i3wsr::config::EMPTY_MAP.clone(),
+                general: i3wsr::config::EMPTY_MAP.clone(),
+                names: !no_names
             }
         }
     };

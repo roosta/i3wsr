@@ -31,15 +31,17 @@ pub mod config;
 pub struct Options {
     pub icons: Map<String, char>,
     pub aliases: Map<String, String>,
-    pub names: bool,
+    pub general: Map<String, String>,
+    pub names: bool
 }
 
 impl Default for Options {
     fn default() -> Self {
         Options {
             icons: icons::NONE.clone(),
-            aliases: config::EMPTY_ALIASES_MAP.clone(),
-            names: true,
+            aliases: config::EMPTY_MAP.clone(),
+            general: config::EMPTY_MAP.clone(),
+            names: true
         }
     }
 }
@@ -180,7 +182,13 @@ fn get_classes(workspace: &Node, x_conn: &xcb::Connection, options: &Options) ->
 pub fn update_tree(x_conn: &xcb::Connection, i3_conn: &mut I3Connection, options: &Options) -> Result<(), Error> {
     let tree = i3_conn.get_tree()?;
     for workspace in get_workspaces(tree) {
-        let classes = get_classes(&workspace, &x_conn, options)?.join("|");
+
+        let separator = match options.general.get("separator") {
+            Some(s) => s,
+            None => "|"
+        };
+
+        let classes = get_classes(&workspace, &x_conn, options)?.join(separator);
 
         let old: String = workspace
             .name

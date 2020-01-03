@@ -5,7 +5,7 @@ use serde::Deserialize;
 use failure::Error;
 
 lazy_static! {
-    pub static ref EMPTY_ALIASES_MAP: Map<String, String> = Map::new();
+    pub static ref EMPTY_MAP: Map<String, String> = Map::new();
 }
 
 #[serde(default)]
@@ -13,13 +13,15 @@ lazy_static! {
 pub struct Config {
     pub icons: Map<String, char>,
     pub aliases: Map<String, String>,
+    pub general: Map<String, String>
 }
 
 impl Default for Config {
     fn default() -> Self {
         Config {
             icons: super::icons::NONE.clone(),
-            aliases: EMPTY_ALIASES_MAP.clone(),
+            aliases: EMPTY_MAP.clone(),
+            general: EMPTY_MAP.clone()
         }
     }
 }

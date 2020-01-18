@@ -225,8 +225,25 @@ pub fn handle_window_event(
         WindowChange::New | WindowChange::Close | WindowChange::Move => {
             update_tree(x_conn, i3_conn, options)?;
         }
+        WindowChange::Focus => {
+            last_focus_mark(i3_conn)?;
+        }
         _ => (),
     }
+    Ok(())
+}
+
+
+
+pub fn last_focus_mark(i3_conn: &mut I3Connection) -> Result<(), Error> {
+
+
+    i3_conn.run_command("[con_mark=_current] mark _last")?;
+    
+    
+    i3_conn.run_command("mark _current")?;
+    
+
     Ok(())
 }
 

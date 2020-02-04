@@ -118,7 +118,7 @@ You can take this a bit further by using a bar that trims the workspace number a
 ```
 
 ## Sway?
-Check out [Pedro Scaff's port](https://github.com/pedroscaff) of i3wsr to Sway.
+Check [Pedro Scaff](https://github.com/pedroscaff)'s port [swaywsr](https://github.com/pedroscaff/swaywsr).
 
 ## Contributors
 * [Daniel Berg (roosta)](https://github.com/roosta)

@@ -25,14 +25,14 @@ extern crate lazy_static;
 
 extern crate toml;
 
-pub mod icons;
 pub mod config;
+pub mod icons;
 
 pub struct Options {
     pub icons: Map<String, char>,
     pub aliases: Map<String, String>,
     pub general: Map<String, String>,
-    pub names: bool
+    pub names: bool,
 }
 
 impl Default for Options {
@@ -41,7 +41,7 @@ impl Default for Options {
             icons: icons::NONE.clone(),
             aliases: config::EMPTY_MAP.clone(),
             general: config::EMPTY_MAP.clone(),
-            names: true
+            names: true,
         }
     }
 }
@@ -162,7 +162,11 @@ fn get_ids(mut nodes: Vec<Vec<&Node>>) -> Vec<u32> {
 }
 
 /// Return a collection of window classes
-fn get_classes(workspace: &Node, x_conn: &xcb::Connection, options: &Options) -> Result<Vec<String>, Error> {
+fn get_classes(
+    workspace: &Node,
+    x_conn: &xcb::Connection,
+    options: &Options,
+) -> Result<Vec<String>, Error> {
     let window_ids = {
         let mut f = get_ids(vec![workspace.floating_nodes.iter().collect()]);
         let mut n = get_ids(vec![workspace.nodes.iter().collect()]);
@@ -179,13 +183,16 @@ fn get_classes(workspace: &Node, x_conn: &xcb::Connection, options: &Options) ->
 }
 
 /// Update all workspace names in tree
-pub fn update_tree(x_conn: &xcb::Connection, i3_conn: &mut I3Connection, options: &Options) -> Result<(), Error> {
+pub fn update_tree(
+    x_conn: &xcb::Connection,
+    i3_conn: &mut I3Connection,
+    options: &Options,
+) -> Result<(), Error> {
     let tree = i3_conn.get_tree()?;
     for workspace in get_workspaces(tree) {
-
         let separator = match options.general.get("separator") {
             Some(s) => s,
-            None => " | "
+            None => " | ",
         };
 
         let classes = get_classes(&workspace, &x_conn, options)?.join(separator);
@@ -332,7 +339,10 @@ mod tests {
         let mut result: Vec<Vec<u32>> = Vec::new();
         for workspace in workspaces {
             result.push(super::get_ids(vec![workspace.nodes.iter().collect()]));
-            result.push(super::get_ids(vec![workspace.floating_nodes.iter().collect()]));
+            result.push(super::get_ids(vec![workspace
+                .floating_nodes
+                .iter()
+                .collect()]));
         }
         let result: usize = result.iter().filter(|v| !v.is_empty()).count();
         assert_eq!(result, 2);

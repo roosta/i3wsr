@@ -14,22 +14,28 @@ use clap::{App, Arg};
 
 fn main() -> Result<(), ExitFailure> {
     let matches = App::new("i3wsr - i3 workspace renamer")
-       .version(crate_version!())
-       .author(crate_authors!(",\n"))
-        .arg(Arg::with_name("icons")
-            .long("icons")
-            .help("Sets icons to be used")
-            .possible_values(&["awesome"])
-            .takes_value(true))
-        .arg(Arg::with_name("no-names")
-            .long("no-names")
-            .help("Set to no to display only icons (if available)"))
-        .arg(Arg::with_name("config")
-            .long("config")
-            .short("c")
-            .help("Path to toml config file")
-            .takes_value(true))
-       .get_matches();
+        .version(crate_version!())
+        .author(crate_authors!(",\n"))
+        .arg(
+            Arg::with_name("icons")
+                .long("icons")
+                .help("Sets icons to be used")
+                .possible_values(&["awesome"])
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("no-names")
+                .long("no-names")
+                .help("Set to no to display only icons (if available)"),
+        )
+        .arg(
+            Arg::with_name("config")
+                .long("config")
+                .short("c")
+                .help("Path to toml config file")
+                .takes_value(true),
+        )
+        .get_matches();
 
     let icons = matches.value_of("icons").unwrap_or("");
     let no_names = matches.is_present("no-names");
@@ -37,23 +43,25 @@ fn main() -> Result<(), ExitFailure> {
         Some(filename) => {
             let file_config = match i3wsr::config::read_toml_config(filename) {
                 Ok(config) => config,
-                Err(e) => panic!("Could not parse config file\n {}", e)
+                Err(e) => panic!("Could not parse config file\n {}", e),
             };
             i3wsr::Options {
-                icons: file_config.icons.into_iter().chain(i3wsr::icons::get_icons(&icons)).collect(),
+                icons: file_config
+                    .icons
+                    .into_iter()
+                    .chain(i3wsr::icons::get_icons(&icons))
+                    .collect(),
                 aliases: file_config.aliases,
                 general: file_config.general,
-                names: !no_names
-            }
-        },
-        None => {
-            i3wsr::Options {
-                icons: i3wsr::icons::get_icons(&icons),
-                aliases: i3wsr::config::EMPTY_MAP.clone(),
-                general: i3wsr::config::EMPTY_MAP.clone(),
-                names: !no_names
+                names: !no_names,
             }
         }
+        None => i3wsr::Options {
+            icons: i3wsr::icons::get_icons(&icons),
+            aliases: i3wsr::config::EMPTY_MAP.clone(),
+            general: i3wsr::config::EMPTY_MAP.clone(),
+            names: !no_names,
+        },
     };
 
     let mut listener = I3EventListener::connect()?;
@@ -67,7 +75,8 @@ fn main() -> Result<(), ExitFailure> {
     for event in listener.listen() {
         match event? {
             Event::WindowEvent(e) => {
-                if let Err(error) = i3wsr::handle_window_event(&e, &x_conn, &mut i3_conn, &options) {
+                if let Err(error) = i3wsr::handle_window_event(&e, &x_conn, &mut i3_conn, &options)
+                {
                     eprintln!("handle_window_event error: {}", error);
                 }
             }

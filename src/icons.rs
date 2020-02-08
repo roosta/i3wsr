@@ -1,5 +1,5 @@
-use std::collections::HashMap as Map;
 use std::char;
+use std::collections::HashMap as Map;
 
 // taken from https://github.com/greshake/i3status-rust/blob/master/src/icons.rs
 macro_rules! map_to_owned (
@@ -24,7 +24,6 @@ lazy_static! {
         "Org.gnome.Nautilus" => '',
         "Evince" => ''
     };
-
     pub static ref NONE: Map<String, char> = Map::new();
 }
 

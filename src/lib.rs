@@ -323,7 +323,7 @@ mod tests {
         let mut result: Vec<Vec<String>> = Vec::new();
         let options = super::Options::default();
         for workspace in workspaces {
-            result.push(super::get_classes(&workspace, &x_conn, &options)?);
+            result.push(super::get_classes(&workspace, &x_conn, &options));
         }
         let expected = vec![vec![], vec!["Gpick", "XTerm"]];
         assert_eq!(result, expected);

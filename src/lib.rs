@@ -104,9 +104,9 @@ fn get_class(conn: &xcb::Connection, id: u32, options: &Options) -> Result<Strin
     });
 
     Ok(results_with_icons
-        .next_back()
-        .ok_or_else(|| LookupError::WindowClass(id))?
-        .to_string())
+       .next_back()
+       .ok_or_else(|| LookupError::WindowClass(id))?
+       .to_string())
 }
 
 /// Checks if window is of type normal. The problem with this is that not all
@@ -162,7 +162,7 @@ fn get_ids(mut nodes: Vec<Vec<&Node>>) -> Vec<u32> {
 }
 
 /// Return a collection of window classes
-fn get_classes(workspace: &Node, x_conn: &xcb::Connection, options: &Options) -> Result<Vec<String>, Error> {
+fn get_classes(workspace: &Node, x_conn: &xcb::Connection, options: &Options) -> Vec<String> {
     let window_ids = {
         let mut f = get_ids(vec![workspace.floating_nodes.iter().collect()]);
         let mut n = get_ids(vec![workspace.nodes.iter().collect()]);
@@ -172,10 +172,17 @@ fn get_classes(workspace: &Node, x_conn: &xcb::Connection, options: &Options) ->
 
     let mut window_classes = Vec::new();
     for id in window_ids {
-        window_classes.push(get_class(&x_conn, id, options)?);
+        let class = match get_class(&x_conn, id, options) {
+            Ok(class) => class,
+            Err(e) => {
+                eprintln!("get_class error: {}", e);
+                continue;
+            }
+        };
+        window_classes.push(class);
     }
 
-    Ok(window_classes)
+    window_classes
 }
 
 /// Update all workspace names in tree
@@ -188,7 +195,7 @@ pub fn update_tree(x_conn: &xcb::Connection, i3_conn: &mut I3Connection, options
             None => " | "
         };
 
-        let classes = get_classes(&workspace, &x_conn, options)?.join(separator);
+        let classes = get_classes(&workspace, &x_conn, options).join(separator);
         let classes = if !classes.is_empty() {
             format!(" {}", classes)
         } else {

@@ -67,7 +67,7 @@ TelegramDesktop = "Telegram"
 "Org.gnome.Nautilus" = "Nautilus"
 
 [general]
-seperator = ""
+separator = ""
 ```
 
 For an overview of available options

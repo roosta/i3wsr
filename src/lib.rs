@@ -85,12 +85,16 @@ fn get_class(conn: &xcb::Connection, id: u32, options: &Options) -> Result<Strin
 
     let result = String::from_utf8(buf)?;
     let mut results = result.split('\0');
-    results.next_back();
+    let wm_instance = results.next().unwrap();
     let mut results_with_icons = results.map(|class| {
         let class_display_name = match options.aliases.get(class) {
             Some(alias) => alias,
             None => class,
         };
+        let mut class = class;
+        if options.icons.contains_key(wm_instance) {
+                class = wm_instance;
+        }
         match options.icons.get(class) {
             Some(icon) => {
                 if options.names {
@@ -104,7 +108,7 @@ fn get_class(conn: &xcb::Connection, id: u32, options: &Options) -> Result<Strin
     });
 
     Ok(results_with_icons
-       .next_back()
+       .next()
        .ok_or_else(|| LookupError::WindowClass(id))?
        .to_string())
 }

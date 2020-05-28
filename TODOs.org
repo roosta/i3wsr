@@ -8,3 +8,6 @@
 To reproduce open a floating window in an empty workspace, switch to another
 and then the WS name should be reset.
 * TODO Filter out empty vectors
+* TODO Remove duplicates option
+* TODO Try harder to respect workspace ordering
+  https://www.reddit.com/r/i3wm/comments/grl4ug/tabs_from_tabbed_mode_in_bar_preferably_polybar/fs07ftc?utm_source=share&utm_medium=web2x

@@ -99,7 +99,10 @@ fn get_class(conn: &xcb::Connection, id: u32, options: &Options) -> Result<Strin
                     format!("{}", icon)
                 }
             }
-            None => format!("{}", class_display_name),
+            None => match options.general.get("default_icon") {
+                Some(default_icon) => format!("{} {}", default_icon, class_display_name),
+                None => format!("{}", class_display_name),
+            },
         }
     });
 

@@ -25,14 +25,14 @@ extern crate lazy_static;
 
 extern crate toml;
 
-pub mod icons;
 pub mod config;
+pub mod icons;
 
 pub struct Options {
     pub icons: Map<String, char>,
     pub aliases: Map<String, String>,
     pub general: Map<String, String>,
-    pub names: bool
+    pub names: bool,
 }
 
 impl Default for Options {
@@ -41,7 +41,7 @@ impl Default for Options {
             icons: icons::NONE.clone(),
             aliases: config::EMPTY_MAP.clone(),
             general: config::EMPTY_MAP.clone(),
-            names: true
+            names: true,
         }
     }
 }
@@ -99,14 +99,17 @@ fn get_class(conn: &xcb::Connection, id: u32, options: &Options) -> Result<Strin
                     format!("{}", icon)
                 }
             }
-            None => format!("{}", class_display_name),
+            None => match options.general.get("default_icon") {
+                Some(default_icon) => format!("{} {}", default_icon, class_display_name),
+                None => format!("{}", class_display_name),
+            },
         }
     });
 
     Ok(results_with_icons
-       .next_back()
-       .ok_or_else(|| LookupError::WindowClass(id))?
-       .to_string())
+        .next_back()
+        .ok_or_else(|| LookupError::WindowClass(id))?
+        .to_string())
 }
 
 /// Checks if window is of type normal. The problem with this is that not all
@@ -186,13 +189,16 @@ fn get_classes(workspace: &Node, x_conn: &xcb::Connection, options: &Options) ->
 }
 
 /// Update all workspace names in tree
-pub fn update_tree(x_conn: &xcb::Connection, i3_conn: &mut I3Connection, options: &Options) -> Result<(), Error> {
+pub fn update_tree(
+    x_conn: &xcb::Connection,
+    i3_conn: &mut I3Connection,
+    options: &Options,
+) -> Result<(), Error> {
     let tree = i3_conn.get_tree()?;
     for workspace in get_workspaces(tree) {
-
         let separator = match options.general.get("separator") {
             Some(s) => s,
-            None => " | "
+            None => " | ",
         };
 
         let classes = get_classes(&workspace, &x_conn, options).join(separator);
@@ -339,7 +345,10 @@ mod tests {
         let mut result: Vec<Vec<u32>> = Vec::new();
         for workspace in workspaces {
             result.push(super::get_ids(vec![workspace.nodes.iter().collect()]));
-            result.push(super::get_ids(vec![workspace.floating_nodes.iter().collect()]));
+            result.push(super::get_ids(vec![workspace
+                .floating_nodes
+                .iter()
+                .collect()]));
         }
         let result: usize = result.iter().filter(|v| !v.is_empty()).count();
         assert_eq!(result, 2);

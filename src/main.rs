@@ -15,7 +15,7 @@ use clap::{App, Arg};
 fn main() -> Result<(), ExitFailure> {
     let matches = App::new("i3wsr - i3 workspace renamer")
        .version(crate_version!())
-       .author(crate_authors!(",\n"))
+       .author("Daniel Berg <mail@roosta.sh>")
         .arg(Arg::with_name("icons")
             .long("icons")
             .help("Sets icons to be used")

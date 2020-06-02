@@ -15,14 +15,14 @@ exclude = ["TODOs.org*", "/script", "/assets/*"]
 travis-ci = { repository = "roosta/i3wsr" }
 
 [dependencies]
-xcb = "0.8"
+xcb = "0.9"
 exitfailure = "0.5.1"
-failure = "0.1.2"
-failure_derive = "0.1.2"
+failure = "0.1.8"
+failure_derive = "0.1.8"
 lazy_static = "1.4.0"
-clap = "2.33.0"
-toml = "0.5.4"
-serde = { version = "1.0", features = ["derive"] }
+clap = "2.33.1"
+toml = "0.5.6"
+serde = { version = "1.0.111", features = ["derive"] }
 
 [dependencies.i3ipc]
-version = "0.8.2"
+version = "0.10.1"

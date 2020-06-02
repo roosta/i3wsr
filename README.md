@@ -68,6 +68,7 @@ TelegramDesktop = "Telegram"
 
 [general]
 separator = ""
+default_icon = ""
 ```
 
 For an overview of available options
@@ -124,6 +125,7 @@ Check [Pedro Scaff](https://github.com/pedroscaff)'s port [swaywsr](https://gith
 * [Daniel Berg (roosta)](https://github.com/roosta)
 * [Cauê Baasch de Souza (cauebs)](https://github.com/cauebs)
 * [Pedro Scaff (pedroscaff)](https://github.com/pedroscaff)
+* [Ben Brooks (bbrks)](https://github.com/bbrks)
 
 ## Test environment
 To run the tests `Xvfb` needs to be installed and run:

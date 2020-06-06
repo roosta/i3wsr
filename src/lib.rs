@@ -57,6 +57,8 @@ impl Default for Options {
 enum LookupError {
     #[fail(display = "Failed to get a class for window id: {}", _0)]
     WindowClass(u32),
+    #[fail(display = "Failed to get a instance for window id: {}", _0)]
+    WindowInstance(u32),
     #[fail(display = "Failed to get name for workspace: {:#?}", _0)]
     WorkspaceName(Box<Node>),
 }
@@ -97,16 +99,12 @@ fn get_class(conn: &xcb::Connection, id: u32, options: &Options) -> Result<Strin
     results.next_back();
 
     // Store vm_instance, leaving only class in results
-    let wm_instance = match results.next() {
-        Some(instance) => instance,
-        None => "",
-    };
+    let wm_instance = results
+        .next()
+        .ok_or_else(|| LookupError::WindowInstance(id))?;
 
     // Store wm_class
-    let class = match results.next() {
-        Some(class) => class,
-        None => "",
-    };
+    let class = results.next().ok_or_else(|| LookupError::WindowClass(id))?;
 
     // Check for aliases
     let display_name = if options.use_instance {
@@ -120,13 +118,16 @@ fn get_class(conn: &xcb::Connection, id: u32, options: &Options) -> Result<Strin
             None => class,
         }
     };
+
+    // either use icon for wm_instance, or fall back to icon for class
     let name = if options.icons.contains_key(wm_instance) && options.use_instance {
         wm_instance
     } else {
         class
     };
 
-    let results_with_icons = match options.icons.get(name) {
+    // Format final result
+    Ok(match options.icons.get(name) {
         Some(icon) => {
             if options.names {
                 format!("{} {}", icon, display_name)
@@ -138,8 +139,7 @@ fn get_class(conn: &xcb::Connection, id: u32, options: &Options) -> Result<Strin
             Some(default_icon) => format!("{} {}", default_icon, display_name),
             None => format!("{}", display_name),
         },
-    };
-    Ok(results_with_icons)
+    })
 }
 
 /// Checks if window is of type normal. The problem with this is that not all

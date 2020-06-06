@@ -26,6 +26,7 @@ fn main() -> Result<(), ExitFailure> {
         .arg(
             Arg::with_name("no-names")
                 .long("no-names")
+                .short("n")
                 .help("Set to no to display only icons (if available)"),
         )
         .arg(

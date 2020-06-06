@@ -36,6 +36,7 @@ pub struct Options {
     pub aliases: Map<String, String>,
     pub general: Map<String, String>,
     pub names: bool,
+    pub filter: bool,
 }
 
 impl Default for Options {
@@ -45,6 +46,7 @@ impl Default for Options {
             aliases: config::EMPTY_MAP.clone(),
             general: config::EMPTY_MAP.clone(),
             names: true,
+            filter: false,
         }
     }
 }
@@ -204,7 +206,13 @@ pub fn update_tree(
             None => " | ",
         };
 
-        let classes = get_classes(&workspace, &x_conn, options).join(separator);
+        let classes = get_classes(&workspace, &x_conn, options);
+        let classes = if options.filter {
+            classes.into_iter().unique().collect()
+        } else {
+            classes
+        };
+        let classes = classes.join(separator);
         let classes = if !classes.is_empty() {
             format!(" {}", classes)
         } else {

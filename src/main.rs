@@ -35,10 +35,17 @@ fn main() -> Result<(), ExitFailure> {
                 .help("Path to toml config file")
                 .takes_value(true),
         )
+        .arg(
+            Arg::with_name("filter-duplicates")
+                .long("filter-duplicates")
+                .short("f")
+                .help("Filter out duplicate entries in workspace"),
+        )
         .get_matches();
 
     let icons = matches.value_of("icons").unwrap_or("");
     let no_names = matches.is_present("no-names");
+    let filter_duplicates = matches.is_present("filter-duplicates");
     let options = match matches.value_of("config") {
         Some(filename) => {
             let file_config = match i3wsr::config::read_toml_config(filename) {
@@ -54,6 +61,7 @@ fn main() -> Result<(), ExitFailure> {
                 aliases: file_config.aliases,
                 general: file_config.general,
                 names: !no_names,
+                filter: filter_duplicates,
             }
         }
         None => i3wsr::Options {
@@ -61,6 +69,7 @@ fn main() -> Result<(), ExitFailure> {
             aliases: i3wsr::config::EMPTY_MAP.clone(),
             general: i3wsr::config::EMPTY_MAP.clone(),
             names: !no_names,
+            filter: filter_duplicates,
         },
     };
 

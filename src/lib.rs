@@ -92,31 +92,54 @@ fn get_class(conn: &xcb::Connection, id: u32, options: &Options) -> Result<Strin
 
     let result = String::from_utf8(buf)?;
     let mut results = result.split('\0');
+
+    // Remove empty string
     results.next_back();
-    let mut results_with_icons = results.map(|class| {
-        let class_display_name = match options.aliases.get(class) {
+
+    // Store vm_instance, leaving only class in results
+    let wm_instance = match results.next() {
+        Some(instance) => instance,
+        None => "",
+    };
+
+    // Store wm_class
+    let class = match results.next() {
+        Some(class) => class,
+        None => "",
+    };
+
+    // Check for aliases
+    let display_name = if options.use_instance {
+        match options.aliases.get(wm_instance) {
+            Some(alias) => alias,
+            None => wm_instance,
+        }
+    } else {
+        match options.aliases.get(class) {
             Some(alias) => alias,
             None => class,
-        };
-        match options.icons.get(class) {
-            Some(icon) => {
-                if options.names {
-                    format!("{} {}", icon, class_display_name)
-                } else {
-                    format!("{}", icon)
-                }
-            }
-            None => match options.general.get("default_icon") {
-                Some(default_icon) => format!("{} {}", default_icon, class_display_name),
-                None => format!("{}", class_display_name),
-            },
         }
-    });
+    };
+    let name = if options.icons.contains_key(wm_instance) && options.use_instance {
+        wm_instance
+    } else {
+        class
+    };
 
-    Ok(results_with_icons
-        .next_back()
-        .ok_or_else(|| LookupError::WindowClass(id))?
-        .to_string())
+    let results_with_icons = match options.icons.get(name) {
+        Some(icon) => {
+            if options.names {
+                format!("{} {}", icon, display_name)
+            } else {
+                format!("{}", icon)
+            }
+        }
+        None => match options.general.get("default_icon") {
+            Some(default_icon) => format!("{} {}", default_icon, display_name),
+            None => format!("{}", display_name),
+        },
+    };
+    Ok(results_with_icons)
 }
 
 /// Checks if window is of type normal. The problem with this is that not all

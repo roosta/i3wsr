@@ -1,6 +1,9 @@
 extern crate xcb;
 use xcb::xproto;
 
+extern crate itertools;
+use itertools::Itertools;
+
 extern crate i3ipc;
 use i3ipc::{
     event::{

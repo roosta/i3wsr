@@ -76,6 +76,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "either"
+version = "1.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bb1f6b1ce1c140482ea30ddd3335fc0024ac7ee112895426e0a629a6c20adfe3"
+
+[[package]]
 name = "exitfailure"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -142,10 +148,20 @@ dependencies = [
  "failure",
  "failure_derive",
  "i3ipc",
+ "itertools",
  "lazy_static",
  "serde",
  "toml",
  "xcb",
+]
+
+[[package]]
+name = "itertools"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "284f18f85651fe11e8a991b2adb42cb078325c996ed026d994719efcfca1d54b"
+dependencies = [
+ "either",
 ]
 
 [[package]]

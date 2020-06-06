@@ -37,6 +37,7 @@ pub struct Options {
     pub general: Map<String, String>,
     pub names: bool,
     pub filter: bool,
+    pub use_instance: bool,
 }
 
 impl Default for Options {
@@ -47,6 +48,7 @@ impl Default for Options {
             general: config::EMPTY_MAP.clone(),
             names: true,
             filter: false,
+            use_instance: false,
         }
     }
 }

@@ -42,11 +42,18 @@ fn main() -> Result<(), ExitFailure> {
                 .short("f")
                 .help("Filter out duplicate entries in workspace"),
         )
+        .arg(
+            Arg::with_name("wm-instance")
+                .long("wm-instance")
+                .short("w")
+                .help("Use wm_instance in place of wm_class"),
+        )
         .get_matches();
 
     let icons = matches.value_of("icons").unwrap_or("");
     let no_names = matches.is_present("no-names");
     let filter_duplicates = matches.is_present("filter-duplicates");
+    let use_instance = matches.is_present("wm-instance");
     let options = match matches.value_of("config") {
         Some(filename) => {
             let file_config = match i3wsr::config::read_toml_config(filename) {
@@ -63,6 +70,7 @@ fn main() -> Result<(), ExitFailure> {
                 general: file_config.general,
                 names: !no_names,
                 filter: filter_duplicates,
+                use_instance: use_instance,
             }
         }
         None => i3wsr::Options {
@@ -71,6 +79,7 @@ fn main() -> Result<(), ExitFailure> {
             general: i3wsr::config::EMPTY_MAP.clone(),
             names: !no_names,
             filter: filter_duplicates,
+            use_instance: use_instance,
         },
     };
 

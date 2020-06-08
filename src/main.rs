@@ -43,9 +43,9 @@ fn main() -> Result<(), ExitFailure> {
                 .help("Remove duplicate entries in workspace"),
         )
         .arg(
-            Arg::with_name("wm-instance")
-                .long("wm-instance")
-                .short("w")
+            Arg::with_name("use-instance")
+                .long("use-instance")
+                .short("e")
                 .help("Use wm_instance in place of wm_class"),
         )
         .get_matches();
@@ -53,7 +53,7 @@ fn main() -> Result<(), ExitFailure> {
     let icons = matches.value_of("icons").unwrap_or("");
     let no_names = matches.is_present("no-names");
     let remove_duplicates = matches.is_present("remove-duplicates");
-    let use_instance = matches.is_present("wm-instance");
+    let use_instance = matches.is_present("use-instance");
     let options = match matches.value_of("config") {
         Some(filename) => {
             let file_config = match i3wsr::config::read_toml_config(filename) {

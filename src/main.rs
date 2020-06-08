@@ -37,10 +37,10 @@ fn main() -> Result<(), ExitFailure> {
                 .takes_value(true),
         )
         .arg(
-            Arg::with_name("filter-duplicates")
-                .long("filter-duplicates")
-                .short("f")
-                .help("Filter out duplicate entries in workspace"),
+            Arg::with_name("remove-duplicates")
+                .long("remove-duplicates")
+                .short("r")
+                .help("Remove duplicate entries in workspace"),
         )
         .arg(
             Arg::with_name("wm-instance")
@@ -52,7 +52,7 @@ fn main() -> Result<(), ExitFailure> {
 
     let icons = matches.value_of("icons").unwrap_or("");
     let no_names = matches.is_present("no-names");
-    let filter_duplicates = matches.is_present("filter-duplicates");
+    let remove_duplicates = matches.is_present("remove-duplicates");
     let use_instance = matches.is_present("wm-instance");
     let options = match matches.value_of("config") {
         Some(filename) => {
@@ -69,7 +69,7 @@ fn main() -> Result<(), ExitFailure> {
                 aliases: file_config.aliases,
                 general: file_config.general,
                 names: !no_names,
-                filter: filter_duplicates,
+                remove_duplicates: remove_duplicates,
                 use_instance: use_instance,
             }
         }
@@ -78,7 +78,7 @@ fn main() -> Result<(), ExitFailure> {
             aliases: i3wsr::config::EMPTY_MAP.clone(),
             general: i3wsr::config::EMPTY_MAP.clone(),
             names: !no_names,
-            filter: filter_duplicates,
+            remove_duplicates: remove_duplicates,
             use_instance: use_instance,
         },
     };

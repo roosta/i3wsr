@@ -1,8 +1,8 @@
+use failure::Error;
+use serde::Deserialize;
 use std::collections::HashMap as Map;
 use std::fs::File;
 use std::io::Read;
-use serde::Deserialize;
-use failure::Error;
 
 lazy_static! {
     pub static ref EMPTY_MAP: Map<String, String> = Map::new();
@@ -13,7 +13,7 @@ lazy_static! {
 pub struct Config {
     pub icons: Map<String, char>,
     pub aliases: Map<String, String>,
-    pub general: Map<String, String>
+    pub general: Map<String, String>,
 }
 
 impl Default for Config {
@@ -21,7 +21,7 @@ impl Default for Config {
         Config {
             icons: super::icons::NONE.clone(),
             aliases: EMPTY_MAP.clone(),
-            general: EMPTY_MAP.clone()
+            general: EMPTY_MAP.clone(),
         }
     }
 }

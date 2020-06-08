@@ -19,6 +19,7 @@ fn main() -> Result<(), ExitFailure> {
         .arg(
             Arg::with_name("icons")
                 .long("icons")
+                .short("i")
                 .help("Sets icons to be used")
                 .possible_values(&["awesome"])
                 .takes_value(true),

@@ -55,13 +55,13 @@ fn main() -> Result<(), ExitFailure> {
     let no_names = matches.is_present("no-names");
     let remove_duplicates = matches.is_present("remove-duplicates");
     let use_instance = matches.is_present("use-instance");
-    let options = match matches.value_of("config") {
+    let mut config = match matches.value_of("config") {
         Some(filename) => {
             let file_config = match i3wsr::config::read_toml_config(filename) {
                 Ok(config) => config,
                 Err(e) => panic!("Could not parse config file\n {}", e),
             };
-            i3wsr::Options {
+            i3wsr::Config {
                 icons: file_config
                     .icons
                     .into_iter()
@@ -69,20 +69,26 @@ fn main() -> Result<(), ExitFailure> {
                     .collect(),
                 aliases: file_config.aliases,
                 general: file_config.general,
-                names: !no_names,
-                remove_duplicates: remove_duplicates,
-                use_instance: use_instance,
+                options: file_config.options
             }
         }
-        None => i3wsr::Options {
+        None => i3wsr::Config {
             icons: i3wsr::icons::get_icons(&icons),
             aliases: i3wsr::config::EMPTY_MAP.clone(),
             general: i3wsr::config::EMPTY_MAP.clone(),
-            names: !no_names,
-            remove_duplicates: remove_duplicates,
-            use_instance: use_instance,
+            options: i3wsr::config::EMPTY_OPT_MAP.clone(),
         },
     };
+
+    if no_names {
+        config.options.insert("no_names".to_string(), no_names);
+    }
+    if remove_duplicates {
+        config.options.insert("remove_duplicates".to_string(), remove_duplicates);
+    }
+    if use_instance {
+        config.options.insert("use_instance".to_string(), use_instance);
+    }
 
     let mut listener = I3EventListener::connect()?;
     let subs = [Subscription::Window, Subscription::Workspace];
@@ -90,18 +96,18 @@ fn main() -> Result<(), ExitFailure> {
 
     let (x_conn, _) = xcb::Connection::connect(None)?;
     let mut i3_conn = I3Connection::connect()?;
-    i3wsr::update_tree(&x_conn, &mut i3_conn, &options)?;
+    i3wsr::update_tree(&x_conn, &mut i3_conn, &config)?;
 
     for event in listener.listen() {
         match event? {
             Event::WindowEvent(e) => {
-                if let Err(error) = i3wsr::handle_window_event(&e, &x_conn, &mut i3_conn, &options)
+                if let Err(error) = i3wsr::handle_window_event(&e, &x_conn, &mut i3_conn, &config)
                 {
                     eprintln!("handle_window_event error: {}", error);
                 }
             }
             Event::WorkspaceEvent(e) => {
-                if let Err(error) = i3wsr::handle_ws_event(&e, &x_conn, &mut i3_conn, &options) {
+                if let Err(error) = i3wsr::handle_ws_event(&e, &x_conn, &mut i3_conn, &config) {
                     eprintln!("handle_ws_event error: {}", error);
                 }
             }

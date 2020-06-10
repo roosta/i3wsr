@@ -6,6 +6,7 @@ use std::io::Read;
 
 lazy_static! {
     pub static ref EMPTY_MAP: Map<String, String> = Map::new();
+    pub static ref EMPTY_OPT_MAP: Map<String, bool> = Map::new();
 }
 
 #[serde(default)]
@@ -14,6 +15,7 @@ pub struct Config {
     pub icons: Map<String, char>,
     pub aliases: Map<String, String>,
     pub general: Map<String, String>,
+    pub options: Map<String, bool>,
 }
 
 impl Default for Config {
@@ -22,6 +24,7 @@ impl Default for Config {
             icons: super::icons::NONE.clone(),
             aliases: EMPTY_MAP.clone(),
             general: EMPTY_MAP.clone(),
+            options: EMPTY_OPT_MAP.clone(),
         }
     }
 }

@@ -16,3 +16,8 @@ TelegramDesktop = "Telegram"
 [general]
 separator = "  "
 default_icon = ""
+
+[options]
+remove_duplicates = true
+use_instance = true
+no_names = true

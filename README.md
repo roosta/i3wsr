@@ -6,6 +6,30 @@ i3wsr - i3 workspace renamer
 `i3wsr` is a small program that uses [I3's](https://i3wm.org/) [IPC Interface](https://i3wm.org/docs/ipc.html)
 to change the name of a workspace based on its contents.
 
+## Table of content
+
+<!-- vim-markdown-toc GFM -->
+
+* [Details](#details)
+* [Installation](#installation)
+  * [Arch linux](#arch-linux)
+* [Usage](#usage)
+* [i3 configuration](#i3-configuration)
+* [Configuration / options](#configuration--options)
+  * [Icons](#icons)
+  * [Aliases](#aliases)
+  * [Seperator](#seperator)
+  * [Default icon](#default-icon)
+  * [No names](#no-names)
+  * [Remove duplicates](#remove-duplicates)
+  * [Use instance](#use-instance)
+* [Sway](#sway)
+* [Contributors](#contributors)
+* [Test environment](#test-environment)
+* [Attribution](#attribution)
+
+<!-- vim-markdown-toc -->
+
 ## Details
 
 The chosen name for a workspace is a composite of the `WM_CLASS` X11 window
@@ -43,57 +67,7 @@ exec_always --no-startup-id $HOME/.cargo/bin/i3wsr
 exec_always --no-startup-id /usr/bin/i3wsr
 ```
 
-### Options
-
-You can configure icons for the respective classes, a very basic preset for font-awesome is configured, to enable it use the option `--icons awesome` (requires font-awesome to be installed).
-
-If you have icons and don't want the names to be displayed, you can use the `--no-names` flag.
-
-For further customization, use the `--config path_to_file.toml` option. The `toml` file has to fields, `icons` to assign icons to classes, and `aliases` to assign alternative names to be displayed.
-
-Example config can be found in `assets/example_config.toml`
-
-```toml
-[icons]
-# font awesome
-TelegramDesktop = ""
-Firefox = ""
-Alacritty = ""
-Thunderbird = ""
-# smile emoji
-MyNiceProgram = "😛"
-
-[aliases]
-TelegramDesktop = "Telegram"
-"Org.gnome.Nautilus" = "Nautilus"
-
-[general]
-separator = ""
-default_icon = ""
-```
-
-For an overview of available options
-
-```shell
-$ i3wsr -h
-i3wsr - i3 workspace renamer 1.2.0
-Daniel Berg <mail@roosta.sh>
-
-USAGE:
-    i3wsr [FLAGS] [OPTIONS]
-
-FLAGS:
-    -h, --help        Prints help information
-        --no-names    Set to no to display only icons (if available)
-    -V, --version     Prints version information
-
-OPTIONS:
-    -c, --config <config>    Path to toml config file
-        --icons <icons>      Sets icons to be used [possible values: awesome]
-
-```
-
-## Configuration
+## i3 configuration
 
 This program depends on numbered workspaces, since we're constantly changing the
 workspace name. So your I3 configuration need to reflect this:
@@ -119,7 +93,109 @@ You can take this a bit further by using a bar that trims the workspace number a
 [Q] Emacs|Firefox
 ```
 
-## Sway?
+## Configuration / options
+
+Configuration for i3wsr can be done using cmd flags, or a config file. A config
+file allows for more nuanced settings, and is required to configure icons and
+aliases. To use a config file pass to the `--config` option on invocation:
+```bash
+i3wsr --config ~/my_config.toml
+```
+Example config can be found in
+[assets/example_config.toml](https://github.com/roosta/i3wsr/blob/master/assets/example_config.toml).
+
+
+### Icons
+You can configure icons for the respective classes, a very basic preset for
+font-awesome is configured, to enable it use the option `--icons awesome`
+(requires font-awesome to be installed).
+
+A more in depth icon configuration can be setup by using a configuration file.
+In there you can define icons for whatever class you'd like.
+```toml
+[icons]
+Firefox = "🌍"
+
+# Use quote when matching anything other than [a-zA-Z]
+"Org.gnome.Nautilus" = "📘"
+```
+A font that provides icons is of course recommended, like
+[font-awesome](https://fontawesome.com/). Make sure your bar has that font
+configured.
+
+### Aliases
+Sometimes class names for windows can be overly verbose, so its possible to
+match a class name with an alias:
+
+```toml
+[aliases]
+Google-chrome-unstable = "Chrome-dev"
+
+# Use quote when matching anything other than [a-zA-Z]
+"Org.gnome.Nautilus" = "Nautilus"
+```
+Now i3wsr will display the alias instead of the full class name.
+
+### Seperator
+
+Normally i3wsr uses the pipe character `|` between class names in a workspace,
+but a custom separator can be configured in the config file:
+```toml
+[general]
+separator = "  "
+```
+
+### Default icon
+To use a default icon when no other is defined use:
+```toml
+[general]
+default_icon = "💀"
+```
+
+### No names
+If you have icons and don't want the names to be displayed, you can use the
+`--no-names` flag, or enable it in your config file like so:
+```toml
+[options]
+no_names = true
+```
+
+### Remove duplicates
+If you want duplicates removed from workspaces use either the flag
+`--remove-duplicates`, or configure it in the `options` section of the config
+file:
+```toml
+[options]
+remove_duplicates = true
+```
+
+### Use instance
+Use WM_INSTANCE instead of WM_CLASS when assigning workspace names, instance is
+usually more specific. i3wsr will try to match icon with instance, and if that
+fail, will fall back to class.
+
+To enable this, either pass the flag `--use-instance`, or add it in your config
+file under `options`.
+```toml
+[options]
+use_instance = true
+```
+
+A use case for this option could be launching `chromium
+--app="https://web.whatsapp.com"`, and then assign a different icon to whatsapp
+in your config file:
+```toml
+[icons]
+"web.whatsapp.com" = "💧"
+```
+
+Aliases will also match on instance:
+```toml
+[aliases]
+"web.whatsapp.com" = "WhatsApp"
+```
+
+## Sway
 Check [Pedro Scaff](https://github.com/pedroscaff)'s port [swaywsr](https://github.com/pedroscaff/swaywsr).
 
 ## Contributors

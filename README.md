@@ -203,6 +203,7 @@ Check [Pedro Scaff](https://github.com/pedroscaff)'s port [swaywsr](https://gith
 * [Cauê Baasch de Souza (cauebs)](https://github.com/cauebs)
 * [Pedro Scaff (pedroscaff)](https://github.com/pedroscaff)
 * [Ben Brooks (bbrks)](https://github.com/bbrks)
+* [luukvbaal](https://github.com/luukvbaal)
 
 ## Test environment
 To run the tests `Xvfb` needs to be installed and run:

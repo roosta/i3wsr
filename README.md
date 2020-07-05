@@ -18,7 +18,7 @@ to change the name of a workspace based on its contents.
 * [Configuration / options](#configuration--options)
   * [Icons](#icons)
   * [Aliases](#aliases)
-  * [Seperator](#seperator)
+  * [Separator](#separator)
   * [Default icon](#default-icon)
   * [No names](#no-names)
   * [Remove duplicates](#remove-duplicates)
@@ -136,7 +136,7 @@ Google-chrome-unstable = "Chrome-dev"
 ```
 Now i3wsr will display the alias instead of the full class name.
 
-### Seperator
+### Separator
 
 Normally i3wsr uses the pipe character `|` between class names in a workspace,
 but a custom separator can be configured in the config file:

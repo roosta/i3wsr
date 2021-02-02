@@ -129,18 +129,28 @@ fn get_class(conn: &xcb::Connection, id: u32, config: &Config) -> Result<String,
         class
     };
 
+    let no_names = get_option(&config, "no_names");
+
     // Format final result
     Ok(match config.icons.get(name) {
         Some(icon) => {
-            if get_option(&config, "no_names") {
+            if no_names {
                 format!("{}", icon)
             } else {
                 format!("{} {}", icon, display_name)
             }
         }
         None => match config.general.get("default_icon") {
-            Some(default_icon) => format!("{} {}", default_icon, display_name),
-            None => format!("{}", display_name),
+            Some(default_icon) => {
+                if no_names {
+                    format!("{}", default_icon)
+                } else {
+                    format!("{} {}", default_icon, display_name)
+                }
+            }
+            None => {
+                format!("{}", display_name)
+            }
         },
     })
 }

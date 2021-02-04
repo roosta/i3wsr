@@ -1,6 +1,6 @@
 [package]
 name = "i3wsr"
-version = "1.3.0"
+version = "1.3.1"
 description = "Change i3-wm workspace names based on its contents"
 authors = ["Daniel Berg <mail@roosta.sh>"]
 repository =  "https://github.com/roosta/i3wsr"

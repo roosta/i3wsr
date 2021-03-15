@@ -11,6 +11,7 @@ to change the name of a workspace based on its contents.
 <!-- vim-markdown-toc GFM -->
 
 * [Details](#details)
+* [Requirements](#requirements)
 * [Installation](#installation)
   * [Arch linux](#arch-linux)
 * [Usage](#usage)
@@ -36,6 +37,17 @@ The chosen name for a workspace is a composite of the `WM_CLASS` X11 window
 property for each window in a workspace. In action it would look something like this:
 
 ![](https://raw.githubusercontent.com/roosta/i3wsr/master/assets/preview.gif)
+## Requirements
+
+i3wsr requires [XCB](https://xcb.freedesktop.org/), if you get compilation
+errors mentioning `xcb`, you might need to install `libxcb`. On Ubuntu for
+example you'd install:
+
+```sh
+sudo apt-get install libxcb1-dev
+```
+
+Refer to [#18](https://github.com/roosta/i3wsr/issues/18) for more.
 
 ## Installation
 [Rust](https://www.rust-lang.org/en-US/), and [Cargo](http://doc.crates.io/) is

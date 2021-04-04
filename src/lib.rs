@@ -149,7 +149,11 @@ fn get_class(conn: &xcb::Connection, id: u32, config: &Config) -> Result<String,
                 }
             }
             None => {
-                format!("{}", display_name)
+                if no_names {
+                    String::new()
+                } else {
+                    format!("{}", display_name)
+                }
             }
         },
     })
@@ -250,6 +254,7 @@ pub fn update_tree(
         } else {
             classes
         };
+        let classes = classes.into_iter().filter(|s| !s.is_empty()).collect::<Vec<String>>();
         let classes = classes.join(separator);
         let classes = if !classes.is_empty() {
             format!(" {}", classes)

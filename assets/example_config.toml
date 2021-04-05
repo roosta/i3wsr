@@ -18,6 +18,7 @@ separator = "  "
 default_icon = ""
 
 [options]
-remove_duplicates = true
-use_instance = true
-no_names = true
+remove_duplicates = false
+use_instance = false
+no_names = false
+no_icon_names = false

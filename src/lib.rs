@@ -130,11 +130,12 @@ fn get_class(conn: &xcb::Connection, id: u32, config: &Config) -> Result<String,
     };
 
     let no_names = get_option(&config, "no_names");
+    let no_icon_names = get_option(&config, "no_icon_names");
 
     // Format final result
     Ok(match config.icons.get(name) {
         Some(icon) => {
-            if no_names {
+            if no_icon_names || no_names {
                 format!("{}", icon)
             } else {
                 format!("{} {}", icon, display_name)
@@ -142,7 +143,7 @@ fn get_class(conn: &xcb::Connection, id: u32, config: &Config) -> Result<String,
         }
         None => match config.general.get("default_icon") {
             Some(default_icon) => {
-                if no_names {
+                if no_icon_names || no_names  {
                     format!("{}", default_icon)
                 } else {
                     format!("{} {}", default_icon, display_name)
@@ -254,7 +255,11 @@ pub fn update_tree(
         } else {
             classes
         };
-        let classes = classes.into_iter().filter(|s| !s.is_empty()).collect::<Vec<String>>();
+        let classes = if get_option(&config, "no_names") {
+            classes.into_iter().filter(|s| !s.is_empty()).collect::<Vec<String>>()
+        } else {
+            classes
+        };
         let classes = classes.join(separator);
         let classes = if !classes.is_empty() {
             format!(" {}", classes)

@@ -25,10 +25,16 @@ fn main() -> Result<(), ExitFailure> {
                 .takes_value(true),
         )
         .arg(
+            Arg::with_name("no-icon-names")
+                .long("no-icon-names")
+                .short("m")
+                .help("Display only icon (if available) otherwise display name"),
+        )
+        .arg(
             Arg::with_name("no-names")
                 .long("no-names")
                 .short("n")
-                .help("Set to no to display only icons (if available)"),
+                .help("Do not display names"),
         )
         .arg(
             Arg::with_name("config")
@@ -52,6 +58,7 @@ fn main() -> Result<(), ExitFailure> {
         .get_matches();
 
     let icons = matches.value_of("icons").unwrap_or("");
+    let no_icon_names = matches.is_present("no-icon-names");
     let no_names = matches.is_present("no-names");
     let remove_duplicates = matches.is_present("remove-duplicates");
     let use_instance = matches.is_present("use-instance");
@@ -80,6 +87,9 @@ fn main() -> Result<(), ExitFailure> {
         },
     };
 
+    if no_icon_names {
+        config.options.insert("no_icon_names".to_string(), no_icon_names);
+    }
     if no_names {
         config.options.insert("no_names".to_string(), no_names);
     }

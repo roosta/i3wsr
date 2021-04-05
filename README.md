@@ -21,6 +21,7 @@ to change the name of a workspace based on its contents.
   * [Aliases](#aliases)
   * [Separator](#separator)
   * [Default icon](#default-icon)
+  * [No icon names](#no-icon-names)
   * [No names](#no-names)
   * [Remove duplicates](#remove-duplicates)
   * [Use instance](#use-instance)
@@ -164,8 +165,15 @@ To use a default icon when no other is defined use:
 default_icon = "💀"
 ```
 
+### No icon names
+To display names only if icon is not available, you can use the
+`--no-icon-names` flag, or enable it in your config file like so:
+```toml
+[options]
+no_icon_names = true
+```
 ### No names
-If you have icons and don't want the names to be displayed, you can use the
+If you don't want i3wsr to display names at all, you can use the
 `--no-names` flag, or enable it in your config file like so:
 ```toml
 [options]

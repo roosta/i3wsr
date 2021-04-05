@@ -100,24 +100,24 @@ fn main() -> Result<(), ExitFailure> {
         config.options.insert("use_instance".to_string(), use_instance);
     }
 
+    let res = i3wsr::regex::parse_config(&config)?;
     let mut listener = I3EventListener::connect()?;
     let subs = [Subscription::Window, Subscription::Workspace];
     listener.subscribe(&subs)?;
 
     let (x_conn, _) = xcb::Connection::connect(None)?;
     let mut i3_conn = I3Connection::connect()?;
-    i3wsr::update_tree(&x_conn, &mut i3_conn, &config)?;
+    i3wsr::update_tree(&x_conn, &mut i3_conn, &config, &res)?;
 
     for event in listener.listen() {
         match event? {
             Event::WindowEvent(e) => {
-                if let Err(error) = i3wsr::handle_window_event(&e, &x_conn, &mut i3_conn, &config)
-                {
+                if let Err(error) = i3wsr::handle_window_event(&e, &x_conn, &mut i3_conn, &config, &res) {
                     eprintln!("handle_window_event error: {}", error);
                 }
             }
             Event::WorkspaceEvent(e) => {
-                if let Err(error) = i3wsr::handle_ws_event(&e, &x_conn, &mut i3_conn, &config) {
+                if let Err(error) = i3wsr::handle_ws_event(&e, &x_conn, &mut i3_conn, &config, &res) {
                     eprintln!("handle_ws_event error: {}", error);
                 }
             }

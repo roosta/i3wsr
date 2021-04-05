@@ -1,8 +1,9 @@
 extern crate xcb;
 use xcb::xproto;
-
 extern crate itertools;
 use itertools::Itertools;
+
+extern crate regex as libre;
 
 extern crate i3ipc;
 use i3ipc::{
@@ -30,6 +31,7 @@ extern crate toml;
 
 pub mod config;
 pub mod icons;
+pub mod regex;
 
 pub struct Config {
     pub icons: Map<String, char>,
@@ -68,7 +70,13 @@ fn get_option(config: &Config, key: &str) -> bool {
 
 /// Return the window class based on id.
 /// Source: https://stackoverflow.com/questions/44833160/how-do-i-get-the-x-window-class-given-a-window-id-with-rust-xcb
-fn get_class(conn: &xcb::Connection, id: u32, config: &Config) -> Result<String, Error> {
+fn get_class(
+    conn: &xcb::Connection,
+    id: u32,
+    config: &Config,
+    res: &Vec<regex::Point>,
+) -> Result<String, Error> {
+
     let window: xproto::Window = id;
     let long_length: u32 = 8;
     let mut long_offset: u32 = 0;
@@ -109,17 +117,24 @@ fn get_class(conn: &xcb::Connection, id: u32, config: &Config) -> Result<String,
     // Store wm_class
     let class = results.next().ok_or_else(|| LookupError::WindowClass(id))?;
 
-    // Check for aliases
-    let display_name = if get_option(&config, "use_instance") {
-        match config.aliases.get(wm_instance) {
-            Some(alias) => alias,
-            None => wm_instance,
-        }
+
+    // Set target from options
+    let target = if get_option(&config, "use_instance") {
+        wm_instance
     } else {
-        match config.aliases.get(class) {
-            Some(alias) => alias,
-            None => class,
+        class
+    };
+
+    // Check for aliases using pre-compiled regex
+    let display_name = {
+        let mut filtered = res.iter().filter(|(re, _)| {
+            re.is_match(target)
+        });
+        match filtered.next() {
+            Some((_, alias)) => alias,
+            None => target
         }
+
     };
 
     // either use icon for wm_instance, or fall back to icon for class
@@ -213,7 +228,13 @@ fn get_ids(mut nodes: Vec<Vec<&Node>>) -> Vec<u32> {
 }
 
 /// Return a collection of window classes
-fn get_classes(workspace: &Node, x_conn: &xcb::Connection, config: &Config) -> Vec<String> {
+fn get_classes(
+    workspace: &Node,
+    x_conn: &xcb::Connection,
+    config: &Config,
+    res: &Vec<regex::Point>,
+) -> Vec<String> {
+
     let window_ids = {
         let mut f = get_ids(vec![workspace.floating_nodes.iter().collect()]);
         let mut n = get_ids(vec![workspace.nodes.iter().collect()]);
@@ -223,7 +244,7 @@ fn get_classes(workspace: &Node, x_conn: &xcb::Connection, config: &Config) -> V
 
     let mut window_classes = Vec::new();
     for id in window_ids {
-        let class = match get_class(&x_conn, id, config) {
+        let class = match get_class(&x_conn, id, config, res) {
             Ok(class) => class,
             Err(e) => {
                 eprintln!("get_class error: {}", e);
@@ -241,6 +262,7 @@ pub fn update_tree(
     x_conn: &xcb::Connection,
     i3_conn: &mut I3Connection,
     config: &Config,
+    res: &Vec<regex::Point>,
 ) -> Result<(), Error> {
     let tree = i3_conn.get_tree()?;
     for workspace in get_workspaces(tree) {
@@ -249,7 +271,7 @@ pub fn update_tree(
             None => " | ",
         };
 
-        let classes = get_classes(&workspace, &x_conn, config);
+        let classes = get_classes(&workspace, &x_conn, config, res);
         let classes = if get_option(&config, "remove_duplicates") {
             classes.into_iter().unique().collect()
         } else {
@@ -292,10 +314,11 @@ pub fn handle_window_event(
     x_conn: &xcb::Connection,
     i3_conn: &mut I3Connection,
     config: &Config,
+    res: &Vec<regex::Point>,
 ) -> Result<(), Error> {
     match e.change {
         WindowChange::New | WindowChange::Close | WindowChange::Move => {
-            update_tree(x_conn, i3_conn, config)?;
+            update_tree(x_conn, i3_conn, config, res)?;
         }
         _ => (),
     }
@@ -308,10 +331,11 @@ pub fn handle_ws_event(
     x_conn: &xcb::Connection,
     i3_conn: &mut I3Connection,
     config: &Config,
+    res: &Vec<regex::Point>,
 ) -> Result<(), Error> {
     match e.change {
         WorkspaceChange::Empty | WorkspaceChange::Focus => {
-            update_tree(x_conn, i3_conn, config)?;
+            update_tree(x_conn, i3_conn, config, res)?;
         }
         _ => (),
     }

@@ -12,6 +12,8 @@ use exitfailure::ExitFailure;
 extern crate clap;
 use clap::{App, Arg};
 
+use i3wsr::config;
+
 fn main() -> Result<(), ExitFailure> {
     let matches = App::new("i3wsr - i3 workspace renamer")
         .version(crate_version!())
@@ -64,11 +66,11 @@ fn main() -> Result<(), ExitFailure> {
     let use_instance = matches.is_present("use-instance");
     let mut config = match matches.value_of("config") {
         Some(filename) => {
-            let file_config = match i3wsr::config::read_toml_config(filename) {
+            let file_config = match config::read_toml_config(filename) {
                 Ok(config) => config,
                 Err(e) => panic!("Could not parse config file\n {}", e),
             };
-            i3wsr::Config {
+            config::Config {
                 icons: file_config
                     .icons
                     .into_iter()
@@ -79,11 +81,11 @@ fn main() -> Result<(), ExitFailure> {
                 options: file_config.options
             }
         }
-        None => i3wsr::Config {
+        None => config::Config {
             icons: i3wsr::icons::get_icons(&icons),
-            aliases: i3wsr::config::EMPTY_MAP.clone(),
-            general: i3wsr::config::EMPTY_MAP.clone(),
-            options: i3wsr::config::EMPTY_OPT_MAP.clone(),
+            aliases: config::EMPTY_MAP.clone(),
+            general: config::EMPTY_MAP.clone(),
+            options: config::EMPTY_OPT_MAP.clone(),
         },
     };
 

@@ -20,8 +20,6 @@ extern crate failure_derive;
 extern crate failure;
 use failure::Error;
 
-use std::collections::HashMap as Map;
-
 extern crate serde;
 
 #[macro_use]
@@ -33,23 +31,7 @@ pub mod config;
 pub mod icons;
 pub mod regex;
 
-pub struct Config {
-    pub icons: Map<String, char>,
-    pub aliases: Map<String, String>,
-    pub general: Map<String, String>,
-    pub options: Map<String, bool>,
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Config {
-            icons: icons::NONE.clone(),
-            aliases: config::EMPTY_MAP.clone(),
-            general: config::EMPTY_MAP.clone(),
-            options: config::EMPTY_OPT_MAP.clone(),
-        }
-    }
-}
+use config::Config;
 
 #[derive(Debug, Fail)]
 enum LookupError {

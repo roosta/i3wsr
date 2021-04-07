@@ -354,7 +354,8 @@ mod tests {
         let (x_conn, _) = super::xcb::Connection::connect(None)?;
         let mut i3_conn = super::I3Connection::connect()?;
         let config = super::Config::default();
-        assert!(super::update_tree(&x_conn, &mut i3_conn, &config).is_ok());
+        let res = super::regex::parse_config(&config)?;
+        assert!(super::update_tree(&x_conn, &mut i3_conn, &config, &res).is_ok());
         let tree = i3_conn.get_tree()?;
         let mut name: String = String::new();
         for output in &tree.nodes {
@@ -394,9 +395,10 @@ mod tests {
             }
         }
         let config = super::Config::default();
+        let res = super::regex::parse_config(&config)?;
         let result: Result<Vec<String>, _> = ids
             .iter()
-            .map(|id| super::get_class(&x_conn, *id, &config))
+            .map(|id| super::get_class(&x_conn, *id, &config, &res))
             .collect();
         assert_eq!(result?, vec!["Gpick", "XTerm"]);
         Ok(())
@@ -411,8 +413,9 @@ mod tests {
         let workspaces = super::get_workspaces(tree);
         let mut result: Vec<Vec<String>> = Vec::new();
         let config = super::Config::default();
+        let res = super::regex::parse_config(&config)?;
         for workspace in workspaces {
-            result.push(super::get_classes(&workspace, &x_conn, &config));
+            result.push(super::get_classes(&workspace, &x_conn, &config, &res));
         }
         let expected = vec![vec![], vec!["Gpick", "XTerm"]];
         assert_eq!(result, expected);

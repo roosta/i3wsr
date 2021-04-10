@@ -74,6 +74,7 @@ fn get_property(
     Ok(reply)
 }
 
+/// Gets a window title, depends on wm_property config opt
 fn get_title(
     conn: &xcb::Connection,
     id: u32,

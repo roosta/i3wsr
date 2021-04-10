@@ -81,19 +81,16 @@ fn get_title(
     res: &Vec<regex::Point>,
 ) -> Result<String, Error> {
 
-    let result = get_property(&conn, id, xproto::ATOM_WM_CLASS)?;
-    let mut results = result.split('\0');
-
-    // Remove empty string
-    results.next_back();
+    let class_reply = get_property(&conn, id, xproto::ATOM_WM_CLASS)?;
+    let mut class_reply = class_reply.split('\0');
 
     // Store vm_instance, leaving only class in results
-    let wm_instance = results
+    let wm_instance = class_reply
         .next()
         .ok_or_else(|| LookupError::WindowInstance(id))?;
 
     // Store wm_class
-    let class = results.next().ok_or_else(|| LookupError::WindowClass(id))?;
+    let class = class_reply.next().ok_or_else(|| LookupError::WindowClass(id))?;
 
 
     // Set target from options

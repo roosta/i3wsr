@@ -122,8 +122,8 @@ fn get_title(
     };
 
     // either use icon for wm_instance, or fall back to icon for class
-    let key = if config.icons.contains_key(wm_instance) && get_option(&config, "use_instance") {
-        wm_instance
+    let key = if config.icons.contains_key(&target) {
+        &target
     } else {
         wm_class
     };

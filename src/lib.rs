@@ -52,13 +52,10 @@ fn get_option(config: &Config, key: &str) -> bool {
 
 /// Return the window class based on id.
 /// Source: https://stackoverflow.com/questions/44833160/how-do-i-get-the-x-window-class-given-a-window-id-with-rust-xcb
-fn get_class(
+fn get_property(
     conn: &xcb::Connection,
     id: u32,
-    config: &Config,
-    res: &Vec<regex::Point>,
 ) -> Result<String, Error> {
-
     let window: xproto::Window = id;
     let long_length: u32 = 8;
     let mut long_offset: u32 = 0;
@@ -85,7 +82,18 @@ fn get_class(
         long_offset += reply.value_len() / 4;
     }
 
-    let result = String::from_utf8(buf)?;
+    Ok(String::from_utf8(buf)?)
+}
+
+fn get_name(
+    conn: &xcb::Connection,
+    id: u32,
+    config: &Config,
+    res: &Vec<regex::Point>,
+) -> Result<String, Error> {
+
+
+    let result = get_property(&conn, id)?;
     let mut results = result.split('\0');
 
     // Remove empty string
@@ -209,8 +217,8 @@ fn get_ids(mut nodes: Vec<Vec<&Node>>) -> Vec<u32> {
     window_ids
 }
 
-/// Return a collection of window classes
-fn get_classes(
+/// Return a collection of workspace names
+fn get_names(
     workspace: &Node,
     x_conn: &xcb::Connection,
     config: &Config,
@@ -226,14 +234,14 @@ fn get_classes(
 
     let mut window_classes = Vec::new();
     for id in window_ids {
-        let class = match get_class(&x_conn, id, config, res) {
-            Ok(class) => class,
+        let name = match get_name(&x_conn, id, config, res) {
+            Ok(name) => name,
             Err(e) => {
-                eprintln!("get_class error: {}", e);
+                eprintln!("get_name error: {}", e);
                 continue;
             }
         };
-        window_classes.push(class);
+        window_classes.push(name);
     }
 
     window_classes
@@ -253,22 +261,22 @@ pub fn update_tree(
             None => " | ",
         };
 
-        let classes = get_classes(&workspace, &x_conn, config, res);
-        let classes = if get_option(&config, "remove_duplicates") {
-            classes.into_iter().unique().collect()
+        let names = get_names(&workspace, &x_conn, config, res);
+        let names = if get_option(&config, "remove_duplicates") {
+            names.into_iter().unique().collect()
         } else {
-            classes
+            names
         };
-        let classes = if get_option(&config, "no_names") {
-            classes.into_iter().filter(|s| !s.is_empty()).collect::<Vec<String>>()
+        let names = if get_option(&config, "no_names") {
+            names.into_iter().filter(|s| !s.is_empty()).collect::<Vec<String>>()
         } else {
-            classes
+            names
         };
-        let classes = classes.join(separator);
-        let classes = if !classes.is_empty() {
-            format!(" {}", classes)
+        let names = names.join(separator);
+        let names = if !names.is_empty() {
+            format!(" {}", names)
         } else {
-            classes
+            names
         };
 
         let old: String = workspace
@@ -278,8 +286,8 @@ pub fn update_tree(
 
         let mut new = old.split(' ').next().unwrap().to_owned();
 
-        if !classes.is_empty() {
-            new.push_str(&classes);
+        if !names.is_empty() {
+            new.push_str(&names);
         }
 
         if old != new {
@@ -355,7 +363,7 @@ mod tests {
     }
 
     #[test]
-    fn get_class() -> Result<(), Error> {
+    fn get_name() -> Result<(), Error> {
         env::set_var("DISPLAY", ":99.0");
         let (x_conn, _) = super::xcb::Connection::connect(None)?;
         let mut i3_conn = super::I3Connection::connect()?;
@@ -380,14 +388,14 @@ mod tests {
         let res = super::regex::parse_config(&config)?;
         let result: Result<Vec<String>, _> = ids
             .iter()
-            .map(|id| super::get_class(&x_conn, *id, &config, &res))
+            .map(|id| super::get_name(&x_conn, *id, &config, &res))
             .collect();
         assert_eq!(result?, vec!["Gpick", "XTerm"]);
         Ok(())
     }
 
     #[test]
-    fn get_classes() -> Result<(), Error> {
+    fn get_names() -> Result<(), Error> {
         env::set_var("DISPLAY", ":99.0");
         let (x_conn, _) = super::xcb::Connection::connect(None)?;
         let mut i3_conn = super::I3Connection::connect()?;
@@ -397,7 +405,7 @@ mod tests {
         let config = super::Config::default();
         let res = super::regex::parse_config(&config)?;
         for workspace in workspaces {
-            result.push(super::get_classes(&workspace, &x_conn, &config, &res));
+            result.push(super::get_names(&workspace, &x_conn, &config, &res));
         }
         let expected = vec![vec![], vec!["Gpick", "XTerm"]];
         assert_eq!(result, expected);

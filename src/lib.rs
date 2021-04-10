@@ -104,7 +104,7 @@ fn get_title(
     };
 
     // Check for aliases using pre-compiled regex
-    let display_name = {
+    let title = {
         let mut filtered = res.iter().filter(|(re, _)| {
             re.is_match(target)
         });
@@ -116,7 +116,7 @@ fn get_title(
     };
 
     // either use icon for wm_instance, or fall back to icon for class
-    let name = if config.icons.contains_key(wm_instance) && get_option(&config, "use_instance") {
+    let key = if config.icons.contains_key(wm_instance) && get_option(&config, "use_instance") {
         wm_instance
     } else {
         class
@@ -126,12 +126,12 @@ fn get_title(
     let no_icon_names = get_option(&config, "no_icon_names");
 
     // Format final result
-    Ok(match config.icons.get(name) {
+    Ok(match config.icons.get(key) {
         Some(icon) => {
             if no_icon_names || no_names {
                 format!("{}", icon)
             } else {
-                format!("{} {}", icon, display_name)
+                format!("{} {}", icon, title)
             }
         }
         None => match config.general.get("default_icon") {
@@ -139,14 +139,14 @@ fn get_title(
                 if no_icon_names || no_names  {
                     format!("{}", default_icon)
                 } else {
-                    format!("{} {}", default_icon, display_name)
+                    format!("{} {}", default_icon, title)
                 }
             }
             None => {
                 if no_names {
                     String::new()
                 } else {
-                    format!("{}", display_name)
+                    format!("{}", title)
                 }
             }
         },

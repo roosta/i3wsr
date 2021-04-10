@@ -58,32 +58,20 @@ fn get_property(
     prop: xproto::Atom,
 ) -> Result<String, Error> {
     let window: xproto::Window = id;
-    let long_length: u32 = 8;
-    let mut long_offset: u32 = 0;
-    let mut buf = Vec::new();
 
-    loop {
-        let cookie = xproto::get_property(
-            &conn,
-            false,
-            window,
-            prop,
-            xproto::ATOM_STRING,
-            long_offset,
-            long_length,
-        );
+    let cookie = xproto::get_property(
+        &conn,
+        false,
+        window,
+        prop,
+        xproto::ATOM_STRING,
+        0,
+        1024,
+    );
 
-        let reply = cookie.get_reply()?;
-        buf.extend_from_slice(reply.value());
-
-        if reply.bytes_after() == 0 {
-            break;
-        }
-
-        long_offset += reply.value_len() / 4;
-    }
-
-    Ok(String::from_utf8(buf)?)
+    let reply = cookie.get_reply()?;
+    let reply = std::str::from_utf8(reply.value())?.to_string();
+    Ok(reply)
 }
 
 fn get_name(

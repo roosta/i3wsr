@@ -24,7 +24,7 @@ fn main() -> Result<(), ExitFailure> {
                 .short("i")
                 .help("Sets icons to be used")
                 .possible_values(&["awesome"])
-                .takes_value(true),
+                .takes_value(true)
         )
         .arg(
             Arg::with_name("no-icon-names")
@@ -36,26 +36,28 @@ fn main() -> Result<(), ExitFailure> {
             Arg::with_name("no-names")
                 .long("no-names")
                 .short("n")
-                .help("Do not display names"),
+                .help("Do not display names")
         )
         .arg(
             Arg::with_name("config")
                 .long("config")
                 .short("c")
                 .help("Path to toml config file")
-                .takes_value(true),
+                .takes_value(true)
         )
         .arg(
             Arg::with_name("remove-duplicates")
                 .long("remove-duplicates")
                 .short("r")
-                .help("Remove duplicate entries in workspace"),
+                .help("Remove duplicate entries in workspace")
         )
         .arg(
-            Arg::with_name("use-instance")
-                .long("use-instance")
-                .short("e")
-                .help("Use wm_instance in place of wm_class"),
+            Arg::with_name("wm_property")
+                .long("wm_property")
+                .short("p")
+                .help("Which window property to use when matching alias, icons")
+                .possible_values(&["class", "instance", "name"])
+                .takes_value(true)
         )
         .get_matches();
 
@@ -63,7 +65,7 @@ fn main() -> Result<(), ExitFailure> {
     let no_icon_names = matches.is_present("no-icon-names");
     let no_names = matches.is_present("no-names");
     let remove_duplicates = matches.is_present("remove-duplicates");
-    let use_instance = matches.is_present("use-instance");
+    let wm_property = matches.is_present("wm_property");
     let mut config = match matches.value_of("config") {
         Some(filename) => {
             let file_config = match config::read_toml_config(filename) {
@@ -98,8 +100,9 @@ fn main() -> Result<(), ExitFailure> {
     if remove_duplicates {
         config.options.insert("remove_duplicates".to_string(), remove_duplicates);
     }
-    if use_instance {
-        config.options.insert("use_instance".to_string(), use_instance);
+    if wm_property {
+        let v = matches.value_of("wm_property").unwrap_or("class");
+        config.general.insert("wm_property".to_string(), v.to_string());
     }
 
     let res = i3wsr::regex::parse_config(&config)?;

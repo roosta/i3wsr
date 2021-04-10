@@ -104,7 +104,12 @@ fn get_title(
         "class" => wm_class.to_string(),
         "instance" => wm_instance.to_string(),
         "name" => {
-            get_property(&conn, id, xproto::ATOM_WM_NAME)?
+            let name = get_property(&conn, id, xproto::ATOM_WM_NAME)?;
+            if name.is_empty() {
+                wm_class.to_string()
+            } else {
+                name
+            }
 
         },
         _ => wm_class.to_string()

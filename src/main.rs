@@ -52,8 +52,8 @@ fn main() -> Result<(), ExitFailure> {
                 .help("Remove duplicate entries in workspace")
         )
         .arg(
-            Arg::with_name("wm_property")
-                .long("wm_property")
+            Arg::with_name("wm-property")
+                .long("wm-property")
                 .short("p")
                 .help("Which window property to use when matching alias, icons")
                 .possible_values(&["class", "instance", "name"])
@@ -65,7 +65,7 @@ fn main() -> Result<(), ExitFailure> {
     let no_icon_names = matches.is_present("no-icon-names");
     let no_names = matches.is_present("no-names");
     let remove_duplicates = matches.is_present("remove-duplicates");
-    let wm_property = matches.is_present("wm_property");
+    let wm_property = matches.is_present("wm-property");
     let mut config = match matches.value_of("config") {
         Some(filename) => {
             let file_config = match config::read_toml_config(filename) {
@@ -101,7 +101,7 @@ fn main() -> Result<(), ExitFailure> {
         config.options.insert("remove_duplicates".to_string(), remove_duplicates);
     }
     if wm_property {
-        let v = matches.value_of("wm_property").unwrap_or("class");
+        let v = matches.value_of("wm-property").unwrap_or("class");
         config.general.insert("wm_property".to_string(), v.to_string());
     }
 

@@ -50,11 +50,12 @@ fn get_option(config: &Config, key: &str) -> bool {
     };
 }
 
-/// Return the window class based on id.
+/// Return window property based on id.
 /// Source: https://stackoverflow.com/questions/44833160/how-do-i-get-the-x-window-class-given-a-window-id-with-rust-xcb
 fn get_property(
     conn: &xcb::Connection,
     id: u32,
+    prop: xproto::Atom,
 ) -> Result<String, Error> {
     let window: xproto::Window = id;
     let long_length: u32 = 8;
@@ -66,7 +67,7 @@ fn get_property(
             &conn,
             false,
             window,
-            xproto::ATOM_WM_CLASS,
+            prop,
             xproto::ATOM_STRING,
             long_offset,
             long_length,
@@ -93,7 +94,7 @@ fn get_name(
 ) -> Result<String, Error> {
 
 
-    let result = get_property(&conn, id)?;
+    let result = get_property(&conn, id, xproto::ATOM_WM_CLASS)?;
     let mut results = result.split('\0');
 
     // Remove empty string

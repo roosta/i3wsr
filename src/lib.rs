@@ -82,42 +82,50 @@ fn get_title(
     res: &Vec<regex::Point>,
 ) -> Result<String, Error> {
 
-    let class_reply = get_property(&conn, id, xproto::ATOM_WM_CLASS)?;
-    let mut class_reply = class_reply.split('\0');
+    let use_prop = match config.general.get("wm_property") {
+        Some(prop) => prop,
+        None => "class",
+    };
+
+    let reply = get_property(&conn, id, xproto::ATOM_WM_CLASS)?;
+    let mut reply = reply.split('\0');
 
     // Store vm_instance, leaving only class in results
-    let wm_instance = class_reply
+    let wm_instance = reply
         .next()
         .ok_or_else(|| LookupError::WindowInstance(id))?;
 
     // Store wm_class
-    let class = class_reply.next().ok_or_else(|| LookupError::WindowClass(id))?;
-
+    let wm_class = reply.next().ok_or_else(|| LookupError::WindowClass(id))?;
 
     // Set target from options
-    let target = if get_option(&config, "use_instance") {
-        wm_instance
-    } else {
-        class
+    // let target = wm_class;
+    let target = match use_prop {
+        "class" => wm_class.to_string(),
+        "instance" => wm_instance.to_string(),
+        "name" => {
+            get_property(&conn, id, xproto::ATOM_WM_NAME)?
+
+        },
+        _ => wm_class.to_string()
     };
 
     // Check for aliases using pre-compiled regex
     let title = {
         let mut filtered = res.iter().filter(|(re, _)| {
-            re.is_match(target)
+            re.is_match(&target)
         });
         match filtered.next() {
             Some((_, alias)) => alias,
-            None => target
+            None => &target
         }
-
     };
 
     // either use icon for wm_instance, or fall back to icon for class
     let key = if config.icons.contains_key(wm_instance) && get_option(&config, "use_instance") {
         wm_instance
     } else {
-        class
+        wm_class
     };
 
     let no_names = get_option(&config, "no_names");

@@ -39,8 +39,8 @@ enum LookupError {
     WindowClass(u32),
     #[fail(display = "Failed to get a instance for window id: {}", _0)]
     WindowInstance(u32),
-    #[fail(display = "Failed to get name for workspace: {:#?}", _0)]
-    WorkspaceName(Box<Node>),
+    #[fail(display = "Failed to get title for workspace: {:#?}", _0)]
+    WorkspaceTitle(Box<Node>),
 }
 
 fn get_option(config: &Config, key: &str) -> bool {
@@ -267,7 +267,7 @@ pub fn update_tree(
         let old: String = workspace
             .name
             .to_owned()
-            .ok_or_else(|| LookupError::WorkspaceName(Box::new(workspace)))?;
+            .ok_or_else(|| LookupError::WorkspaceTitle(Box::new(workspace)))?;
 
         let mut new = old.split(' ').next().unwrap().to_owned();
 

@@ -74,13 +74,12 @@ fn get_property(
     Ok(reply)
 }
 
-fn get_name(
+fn get_title(
     conn: &xcb::Connection,
     id: u32,
     config: &Config,
     res: &Vec<regex::Point>,
 ) -> Result<String, Error> {
-
 
     let result = get_property(&conn, id, xproto::ATOM_WM_CLASS)?;
     let mut results = result.split('\0');
@@ -206,8 +205,8 @@ fn get_ids(mut nodes: Vec<Vec<&Node>>) -> Vec<u32> {
     window_ids
 }
 
-/// Return a collection of workspace names
-fn get_names(
+/// Collect a vector of workspace titles
+fn collect_titles(
     workspace: &Node,
     x_conn: &xcb::Connection,
     config: &Config,
@@ -221,19 +220,19 @@ fn get_names(
         n
     };
 
-    let mut window_classes = Vec::new();
+    let mut titles = Vec::new();
     for id in window_ids {
-        let name = match get_name(&x_conn, id, config, res) {
-            Ok(name) => name,
+        let title = match get_title(&x_conn, id, config, res) {
+            Ok(title) => title,
             Err(e) => {
-                eprintln!("get_name error: {}", e);
+                eprintln!("get_title error: {}", e);
                 continue;
             }
         };
-        window_classes.push(name);
+        titles.push(title);
     }
 
-    window_classes
+    titles
 }
 
 /// Update all workspace names in tree
@@ -250,22 +249,22 @@ pub fn update_tree(
             None => " | ",
         };
 
-        let names = get_names(&workspace, &x_conn, config, res);
-        let names = if get_option(&config, "remove_duplicates") {
-            names.into_iter().unique().collect()
+        let titles = collect_titles(&workspace, &x_conn, config, res);
+        let titles = if get_option(&config, "remove_duplicates") {
+            titles.into_iter().unique().collect()
         } else {
-            names
+            titles
         };
-        let names = if get_option(&config, "no_names") {
-            names.into_iter().filter(|s| !s.is_empty()).collect::<Vec<String>>()
+        let titles = if get_option(&config, "no_names") {
+            titles.into_iter().filter(|s| !s.is_empty()).collect::<Vec<String>>()
         } else {
-            names
+            titles
         };
-        let names = names.join(separator);
-        let names = if !names.is_empty() {
-            format!(" {}", names)
+        let titles = titles.join(separator);
+        let titles = if !titles.is_empty() {
+            format!(" {}", titles)
         } else {
-            names
+            titles
         };
 
         let old: String = workspace
@@ -275,8 +274,8 @@ pub fn update_tree(
 
         let mut new = old.split(' ').next().unwrap().to_owned();
 
-        if !names.is_empty() {
-            new.push_str(&names);
+        if !titles.is_empty() {
+            new.push_str(&titles);
         }
 
         if old != new {
@@ -352,7 +351,7 @@ mod tests {
     }
 
     #[test]
-    fn get_name() -> Result<(), Error> {
+    fn get_title() -> Result<(), Error> {
         env::set_var("DISPLAY", ":99.0");
         let (x_conn, _) = super::xcb::Connection::connect(None)?;
         let mut i3_conn = super::I3Connection::connect()?;
@@ -377,14 +376,14 @@ mod tests {
         let res = super::regex::parse_config(&config)?;
         let result: Result<Vec<String>, _> = ids
             .iter()
-            .map(|id| super::get_name(&x_conn, *id, &config, &res))
+            .map(|id| super::get_title(&x_conn, *id, &config, &res))
             .collect();
         assert_eq!(result?, vec!["Gpick", "XTerm"]);
         Ok(())
     }
 
     #[test]
-    fn get_names() -> Result<(), Error> {
+    fn collect_titles() -> Result<(), Error> {
         env::set_var("DISPLAY", ":99.0");
         let (x_conn, _) = super::xcb::Connection::connect(None)?;
         let mut i3_conn = super::I3Connection::connect()?;
@@ -394,7 +393,7 @@ mod tests {
         let config = super::Config::default();
         let res = super::regex::parse_config(&config)?;
         for workspace in workspaces {
-            result.push(super::get_names(&workspace, &x_conn, &config, &res));
+            result.push(super::collect_titles(&workspace, &x_conn, &config, &res));
         }
         let expected = vec![vec![], vec!["Gpick", "XTerm"]];
         assert_eq!(result, expected);

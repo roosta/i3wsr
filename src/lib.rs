@@ -99,7 +99,6 @@ fn get_title(
     let wm_class = reply.next().ok_or_else(|| LookupError::WindowClass(id))?;
 
     // Set target from options
-    // let target = wm_class;
     let target = match use_prop {
         "class" => wm_class.to_string(),
         "instance" => wm_instance.to_string(),

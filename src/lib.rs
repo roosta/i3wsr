@@ -43,6 +43,7 @@ enum LookupError {
     WorkspaceTitle(Box<Node>),
 }
 
+/// Helper fn to get options via config
 fn get_option(config: &Config, key: &str) -> bool {
     return match config.options.get(key) {
         Some(v) => *v,
@@ -51,7 +52,6 @@ fn get_option(config: &Config, key: &str) -> bool {
 }
 
 /// Return window property based on id.
-/// Source: https://stackoverflow.com/questions/44833160/how-do-i-get-the-x-window-class-given-a-window-id-with-rust-xcb
 fn get_property(
     conn: &xcb::Connection,
     id: u32,

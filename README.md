@@ -8,28 +8,25 @@ to change the name of a workspace based on its contents.
 
 ## Table of content
 
-<!-- vim-markdown-toc GFM -->
-
-* [Details](#details)
-* [Requirements](#requirements)
 * [Installation](#installation)
   * [Arch linux](#arch-linux)
 * [Usage](#usage)
 * [i3 configuration](#i3-configuration)
 * [Configuration / options](#configuration--options)
-  * [Icons](#icons)
   * [Aliases](#aliases)
+  * [WM Property](#wm-property)
+    * [Class](#class)
+    * [Instance](#instance)
+    * [Name](#name)
+  * [Icons](#icons)
   * [Separator](#separator)
   * [Default icon](#default-icon)
+  * [No icon names](#no-icon-names)
   * [No names](#no-names)
   * [Remove duplicates](#remove-duplicates)
-  * [Use instance](#use-instance)
 * [Sway](#sway)
-* [Contributors](#contributors)
-* [Test environment](#test-environment)
+* [Testing](#testing)
 * [Attribution](#attribution)
-
-<!-- vim-markdown-toc -->
 
 ## Details
 
@@ -49,7 +46,9 @@ sudo apt-get install libxcb1-dev
 
 Refer to [#18](https://github.com/roosta/i3wsr/issues/18) for more.
 
+
 ## Installation
+
 [Rust](https://www.rust-lang.org/en-US/), and [Cargo](http://doc.crates.io/) is
 required, and `i3wsr` can be installed using cargo like so:
 
@@ -117,13 +116,111 @@ Example config can be found in
 [assets/example_config.toml](https://github.com/roosta/i3wsr/blob/master/assets/example_config.toml).
 
 
+### Aliases
+
+Sometimes a WM property  can be overly verbose, so its possible to match a
+class name with an alias:
+
+```toml
+[aliases]
+
+# Exact match
+"^Google-chrome-unstable$" = "Chrome-dev"
+
+# Substring match
+firefox = "Firefox"
+
+# Escape if you want to match literal periods
+"Org\\.gnome\\.Nautilus" = "Nautilus"
+```
+Alias keys uses regex for matching, so it's possible to get creative:
+
+```toml
+# This will match gimp regardless of version number reported in class
+"Gimp-\\d\\.\\d\\d" = "Gimp"
+```
+
+Remember to quote anything but `[a-zA-Z]`, and to escape your slashes. Due to
+rust string escapes if you want a literal backslash use two slashes `\\d`.
+
+### WM Property
+
+i3wsr supports 3 window properties currently:
+
+```toml
+[general]
+
+wm_property = "instance"
+```
+
+Possible options are `class`, `instance`, and `name`, and will default to `class`
+if not present.
+
+You can alternatively supply cmd argument:
+
+```sh
+i3wsr --wm-property instance
+```
+
+#### Class
+
+This is the default, and the most succinct.
+
+#### Instance
+
+Use WM_INSTANCE instead of WM_CLASS when assigning workspace names, instance is
+usually more specific. i3wsr will try to match icon with instance, and if that
+fail, will fall back to class.
+
+A use case for this option could be launching `chromium
+--app="https://web.whatsapp.com"`, and then assign a different icon to whatsapp
+in your config file:
+```toml
+[icons]
+"web\\.whatsapp\\.com" = "🗩"
+```
+
+Aliases will also match on instance:
+```toml
+[aliases]
+"web\\.whatsapp\\.com" = "WhatsApp"
+```
+
+#### Name
+
+Uses WM_NAME instead of WM_CLASS, this option is very verbose and relies on regex
+matching of aliases to be of any use.
+
+A use-case is running some terminal application, and as default i3wsr will only
+display class regardless of whats running in the terminal.
+
+So you could do something like this:
+
+```toml
+[general]
+wm_property = "name"
+
+[aliases]
+".*mutt$" = "Mutt"
+```
+
+You could display whatever the terminal is running, but this comes with one
+caveat: i3 has no way of knowing what happens in a terminal and starting say
+mutt will not trigger any IPC events. The alias will take effect whenever i3
+receives a window or workspace event.
+
+It should be possible to write a launcher script, that wraps whatever
+command your running with a custom i3 ipc trigger event. If anyone figures out
+a nice way of doing it let me know.
+
 ### Icons
-You can configure icons for the respective classes, a very basic preset for
+
+You can configure icons for your WM property, a very basic preset for
 font-awesome is configured, to enable it use the option `--icons awesome`
 (requires font-awesome to be installed).
 
 A more in depth icon configuration can be setup by using a configuration file.
-In there you can define icons for whatever class you'd like.
+In there you can define icons for whatever title you'd like.
 ```toml
 [icons]
 Firefox = "🌍"
@@ -131,22 +228,20 @@ Firefox = "🌍"
 # Use quote when matching anything other than [a-zA-Z]
 "Org.gnome.Nautilus" = "📘"
 ```
-A font that provides icons is of course recommended, like
-[font-awesome](https://fontawesome.com/). Make sure your bar has that font
-configured.
-
-### Aliases
-Sometimes class names for windows can be overly verbose, so its possible to
-match a class name with an alias:
+i3wsr tries to match an icon with an alias first, then falls back to window
+class, so a config like this is valid:
 
 ```toml
 [aliases]
-Google-chrome-unstable = "Chrome-dev"
+"Gimp-\\d\\.\\d\\d" = "Gimp"
 
-# Use quote when matching anything other than [a-zA-Z]
-"Org.gnome.Nautilus" = "Nautilus"
+[icons]
+Gimp = "📄"
 ```
-Now i3wsr will display the alias instead of the full class name.
+
+A font that provides icons is of course recommended, like
+[font-awesome](https://fontawesome.com/). Make sure your bar has that font
+configured.
 
 ### Separator
 
@@ -164,8 +259,15 @@ To use a default icon when no other is defined use:
 default_icon = "💀"
 ```
 
+### No icon names
+To display names only if icon is not available, you can use the
+`--no-icon-names` flag, or enable it in your config file like so:
+```toml
+[options]
+no_icon_names = true
+```
 ### No names
-If you have icons and don't want the names to be displayed, you can use the
+If you don't want i3wsr to display names at all, you can use the
 `--no-names` flag, or enable it in your config file like so:
 ```toml
 [options]
@@ -181,56 +283,13 @@ file:
 remove_duplicates = true
 ```
 
-### Use instance
-Use WM_INSTANCE instead of WM_CLASS when assigning workspace names, instance is
-usually more specific. i3wsr will try to match icon with instance, and if that
-fail, will fall back to class.
-
-To enable this, either pass the flag `--use-instance`, or add it in your config
-file under `options`.
-```toml
-[options]
-use_instance = true
-```
-
-A use case for this option could be launching `chromium
---app="https://web.whatsapp.com"`, and then assign a different icon to whatsapp
-in your config file:
-```toml
-[icons]
-"web.whatsapp.com" = "💧"
-```
-
-Aliases will also match on instance:
-```toml
-[aliases]
-"web.whatsapp.com" = "WhatsApp"
-```
-
 ## Sway
 Check [Pedro Scaff](https://github.com/pedroscaff)'s port [swaywsr](https://github.com/pedroscaff/swaywsr).
 
-## Contributors
-* [Daniel Berg (roosta)](https://github.com/roosta)
-* [Cauê Baasch de Souza (cauebs)](https://github.com/cauebs)
-* [Pedro Scaff (pedroscaff)](https://github.com/pedroscaff)
-* [Ben Brooks (bbrks)](https://github.com/bbrks)
-* [luukvbaal](https://github.com/luukvbaal)
+## Testing
 
-## Test environment
-To run the tests `Xvfb` needs to be installed and run:
-
-```shell
-Xvfb :99.0
-```
-This sets up a headless x server running on DISPLAY :99.0, then some apps needs to be run in this new server:
-
-```shell
-env DISPLAY=:99.0 gpick
-env DISPLAY=:99.0 i3 -c /etc/i3/config
-```
-
-refer to [.travis.yml](https://github.com/roosta/i3wsr/blob/master/.travis.yml) for a CI example
+To run tests locally [Vagrant](https://www.vagrantup.com/) is required. Run
+`script/run_tests.sh` to run tests on ubuntu xenial.
 
 ## Attribution
 This program would not be possible without

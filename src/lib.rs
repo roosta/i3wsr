@@ -1,8 +1,9 @@
 extern crate xcb;
 use xcb::xproto;
-
 extern crate itertools;
 use itertools::Itertools;
+
+extern crate regex as libre;
 
 extern crate i3ipc;
 use i3ipc::{
@@ -19,8 +20,6 @@ extern crate failure_derive;
 extern crate failure;
 use failure::Error;
 
-use std::collections::HashMap as Map;
-
 extern crate serde;
 
 #[macro_use]
@@ -30,24 +29,9 @@ extern crate toml;
 
 pub mod config;
 pub mod icons;
+pub mod regex;
 
-pub struct Config {
-    pub icons: Map<String, char>,
-    pub aliases: Map<String, String>,
-    pub general: Map<String, String>,
-    pub options: Map<String, bool>,
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Config {
-            icons: icons::NONE.clone(),
-            aliases: config::EMPTY_MAP.clone(),
-            general: config::EMPTY_MAP.clone(),
-            options: config::EMPTY_OPT_MAP.clone(),
-        }
-    }
-}
+use config::Config;
 
 #[derive(Debug, Fail)]
 enum LookupError {
@@ -55,10 +39,11 @@ enum LookupError {
     WindowClass(u32),
     #[fail(display = "Failed to get a instance for window id: {}", _0)]
     WindowInstance(u32),
-    #[fail(display = "Failed to get name for workspace: {:#?}", _0)]
-    WorkspaceName(Box<Node>),
+    #[fail(display = "Failed to get title for workspace: {:#?}", _0)]
+    WorkspaceTitle(Box<Node>),
 }
 
+/// Helper fn to get options via config
 fn get_option(config: &Config, key: &str) -> bool {
     return match config.options.get(key) {
         Some(v) => *v,
@@ -66,90 +51,113 @@ fn get_option(config: &Config, key: &str) -> bool {
     };
 }
 
-/// Return the window class based on id.
-/// Source: https://stackoverflow.com/questions/44833160/how-do-i-get-the-x-window-class-given-a-window-id-with-rust-xcb
-fn get_class(conn: &xcb::Connection, id: u32, config: &Config) -> Result<String, Error> {
+/// Return window property based on id.
+fn get_property(
+    conn: &xcb::Connection,
+    id: u32,
+    prop: xproto::Atom,
+) -> Result<String, Error> {
     let window: xproto::Window = id;
-    let long_length: u32 = 8;
-    let mut long_offset: u32 = 0;
-    let mut buf = Vec::new();
 
-    loop {
-        let cookie = xproto::get_property(
-            &conn,
-            false,
-            window,
-            xproto::ATOM_WM_CLASS,
-            xproto::ATOM_STRING,
-            long_offset,
-            long_length,
-        );
+    let cookie = xproto::get_property(
+        &conn,
+        false,
+        window,
+        prop,
+        xproto::ATOM_STRING,
+        0,
+        1024,
+    );
 
-        let reply = cookie.get_reply()?;
-        buf.extend_from_slice(reply.value());
+    let reply = cookie.get_reply()?;
+    let reply = std::str::from_utf8(reply.value())?.to_string();
+    Ok(reply)
+}
 
-        if reply.bytes_after() == 0 {
-            break;
-        }
+/// Gets a window title, depends on wm_property config opt
+fn get_title(
+    conn: &xcb::Connection,
+    id: u32,
+    config: &Config,
+    res: &Vec<regex::Point>,
+) -> Result<String, Error> {
 
-        long_offset += reply.value_len() / 4;
-    }
+    let use_prop = match config.general.get("wm_property") {
+        Some(prop) => prop,
+        None => "class",
+    };
 
-    let result = String::from_utf8(buf)?;
-    let mut results = result.split('\0');
-
-    // Remove empty string
-    results.next_back();
+    let reply = get_property(&conn, id, xproto::ATOM_WM_CLASS)?;
+    let mut reply = reply.split('\0');
 
     // Store vm_instance, leaving only class in results
-    let wm_instance = results
+    let wm_instance = reply
         .next()
         .ok_or_else(|| LookupError::WindowInstance(id))?;
 
     // Store wm_class
-    let class = results.next().ok_or_else(|| LookupError::WindowClass(id))?;
+    let wm_class = reply.next().ok_or_else(|| LookupError::WindowClass(id))?;
 
-    // Check for aliases
-    let display_name = if get_option(&config, "use_instance") {
-        match config.aliases.get(wm_instance) {
-            Some(alias) => alias,
-            None => wm_instance,
-        }
-    } else {
-        match config.aliases.get(class) {
-            Some(alias) => alias,
-            None => class,
+    // Set target from options
+    let target = match use_prop {
+        "class" => wm_class.to_string(),
+        "instance" => wm_instance.to_string(),
+        "name" => {
+            let name = get_property(&conn, id, xproto::ATOM_WM_NAME)?;
+            if name.is_empty() {
+                wm_class.to_string()
+            } else {
+                name
+            }
+
+        },
+        _ => wm_class.to_string()
+    };
+
+    // Check for aliases using pre-compiled regex
+    let title = {
+        let mut filtered = res.iter().filter(|(re, _)| {
+            re.is_match(&target)
+        });
+        match filtered.next() {
+            Some((_, alias)) => alias,
+            None => &target
         }
     };
 
     // either use icon for wm_instance, or fall back to icon for class
-    let name = if config.icons.contains_key(wm_instance) && get_option(&config, "use_instance") {
-        wm_instance
+    let key = if config.icons.contains_key(title) {
+        title
     } else {
-        class
+        wm_class
     };
 
     let no_names = get_option(&config, "no_names");
+    let no_icon_names = get_option(&config, "no_icon_names");
 
     // Format final result
-    Ok(match config.icons.get(name) {
+    Ok(match config.icons.get(key) {
         Some(icon) => {
-            if no_names {
+            if no_icon_names || no_names {
                 format!("{}", icon)
             } else {
-                format!("{} {}", icon, display_name)
+                format!("{} {}", icon, title)
             }
         }
         None => match config.general.get("default_icon") {
             Some(default_icon) => {
-                if no_names {
+                if no_icon_names || no_names  {
                     format!("{}", default_icon)
                 } else {
-                    format!("{} {}", default_icon, display_name)
+                    format!("{} {}", default_icon, title)
                 }
             }
             None => {
-                format!("{}", display_name)
+                if no_names {
+                    String::new()
+                } else {
+                    format!("{}", title)
+                }
             }
         },
     })
@@ -207,8 +215,14 @@ fn get_ids(mut nodes: Vec<Vec<&Node>>) -> Vec<u32> {
     window_ids
 }
 
-/// Return a collection of window classes
-fn get_classes(workspace: &Node, x_conn: &xcb::Connection, config: &Config) -> Vec<String> {
+/// Collect a vector of workspace titles
+fn collect_titles(
+    workspace: &Node,
+    x_conn: &xcb::Connection,
+    config: &Config,
+    res: &Vec<regex::Point>,
+) -> Vec<String> {
+
     let window_ids = {
         let mut f = get_ids(vec![workspace.floating_nodes.iter().collect()]);
         let mut n = get_ids(vec![workspace.nodes.iter().collect()]);
@@ -216,19 +230,19 @@ fn get_classes(workspace: &Node, x_conn: &xcb::Connection, config: &Config) -> V
         n
     };
 
-    let mut window_classes = Vec::new();
+    let mut titles = Vec::new();
     for id in window_ids {
-        let class = match get_class(&x_conn, id, config) {
-            Ok(class) => class,
+        let title = match get_title(&x_conn, id, config, res) {
+            Ok(title) => title,
             Err(e) => {
-                eprintln!("get_class error: {}", e);
+                eprintln!("get_title error: {}", e);
                 continue;
             }
         };
-        window_classes.push(class);
+        titles.push(title);
     }
 
-    window_classes
+    titles
 }
 
 /// Update all workspace names in tree
@@ -236,6 +250,7 @@ pub fn update_tree(
     x_conn: &xcb::Connection,
     i3_conn: &mut I3Connection,
     config: &Config,
+    res: &Vec<regex::Point>,
 ) -> Result<(), Error> {
     let tree = i3_conn.get_tree()?;
     for workspace in get_workspaces(tree) {
@@ -244,28 +259,33 @@ pub fn update_tree(
             None => " | ",
         };
 
-        let classes = get_classes(&workspace, &x_conn, config);
-        let classes = if get_option(&config, "remove_duplicates") {
-            classes.into_iter().unique().collect()
+        let titles = collect_titles(&workspace, &x_conn, config, res);
+        let titles = if get_option(&config, "remove_duplicates") {
+            titles.into_iter().unique().collect()
         } else {
-            classes
+            titles
         };
-        let classes = classes.join(separator);
-        let classes = if !classes.is_empty() {
-            format!(" {}", classes)
+        let titles = if get_option(&config, "no_names") {
+            titles.into_iter().filter(|s| !s.is_empty()).collect::<Vec<String>>()
         } else {
-            classes
+            titles
+        };
+        let titles = titles.join(separator);
+        let titles = if !titles.is_empty() {
+            format!(" {}", titles)
+        } else {
+            titles
         };
 
         let old: String = workspace
             .name
             .to_owned()
-            .ok_or_else(|| LookupError::WorkspaceName(Box::new(workspace)))?;
+            .ok_or_else(|| LookupError::WorkspaceTitle(Box::new(workspace)))?;
 
         let mut new = old.split(' ').next().unwrap().to_owned();
 
-        if !classes.is_empty() {
-            new.push_str(&classes);
+        if !titles.is_empty() {
+            new.push_str(&titles);
         }
 
         if old != new {
@@ -282,10 +302,11 @@ pub fn handle_window_event(
     x_conn: &xcb::Connection,
     i3_conn: &mut I3Connection,
     config: &Config,
+    res: &Vec<regex::Point>,
 ) -> Result<(), Error> {
     match e.change {
         WindowChange::New | WindowChange::Close | WindowChange::Move => {
-            update_tree(x_conn, i3_conn, config)?;
+            update_tree(x_conn, i3_conn, config, res)?;
         }
         _ => (),
     }
@@ -298,10 +319,11 @@ pub fn handle_ws_event(
     x_conn: &xcb::Connection,
     i3_conn: &mut I3Connection,
     config: &Config,
+    res: &Vec<regex::Point>,
 ) -> Result<(), Error> {
     match e.change {
         WorkspaceChange::Empty | WorkspaceChange::Focus => {
-            update_tree(x_conn, i3_conn, config)?;
+            update_tree(x_conn, i3_conn, config, res)?;
         }
         _ => (),
     }
@@ -320,7 +342,8 @@ mod tests {
         let (x_conn, _) = super::xcb::Connection::connect(None)?;
         let mut i3_conn = super::I3Connection::connect()?;
         let config = super::Config::default();
-        assert!(super::update_tree(&x_conn, &mut i3_conn, &config).is_ok());
+        let res = super::regex::parse_config(&config)?;
+        assert!(super::update_tree(&x_conn, &mut i3_conn, &config, &res).is_ok());
         let tree = i3_conn.get_tree()?;
         let mut name: String = String::new();
         for output in &tree.nodes {
@@ -338,7 +361,7 @@ mod tests {
     }
 
     #[test]
-    fn get_class() -> Result<(), Error> {
+    fn get_title() -> Result<(), Error> {
         env::set_var("DISPLAY", ":99.0");
         let (x_conn, _) = super::xcb::Connection::connect(None)?;
         let mut i3_conn = super::I3Connection::connect()?;
@@ -360,16 +383,17 @@ mod tests {
             }
         }
         let config = super::Config::default();
+        let res = super::regex::parse_config(&config)?;
         let result: Result<Vec<String>, _> = ids
             .iter()
-            .map(|id| super::get_class(&x_conn, *id, &config))
+            .map(|id| super::get_title(&x_conn, *id, &config, &res))
             .collect();
         assert_eq!(result?, vec!["Gpick", "XTerm"]);
         Ok(())
     }
 
     #[test]
-    fn get_classes() -> Result<(), Error> {
+    fn collect_titles() -> Result<(), Error> {
         env::set_var("DISPLAY", ":99.0");
         let (x_conn, _) = super::xcb::Connection::connect(None)?;
         let mut i3_conn = super::I3Connection::connect()?;
@@ -377,8 +401,9 @@ mod tests {
         let workspaces = super::get_workspaces(tree);
         let mut result: Vec<Vec<String>> = Vec::new();
         let config = super::Config::default();
+        let res = super::regex::parse_config(&config)?;
         for workspace in workspaces {
-            result.push(super::get_classes(&workspace, &x_conn, &config));
+            result.push(super::collect_titles(&workspace, &x_conn, &config, &res));
         }
         let expected = vec![vec![], vec!["Gpick", "XTerm"]];
         assert_eq!(result, expected);

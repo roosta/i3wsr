@@ -177,7 +177,7 @@ A use case for this option could be launching `chromium
 in your config file:
 ```toml
 [icons]
-"web\\.whatsapp\\.com" = "🗩"
+"WhatsApp" = "🗩"
 ```
 
 Aliases will also match on instance:

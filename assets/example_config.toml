@@ -21,6 +21,5 @@ wm_property = "class"
 
 [options]
 remove_duplicates = false
-use_instance = false
 no_names = false
 no_icon_names = false

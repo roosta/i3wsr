@@ -262,20 +262,10 @@ remove_duplicates = true
 ## Sway
 Check [Pedro Scaff](https://github.com/pedroscaff)'s port [swaywsr](https://github.com/pedroscaff/swaywsr).
 
-## Test environment
-To run the tests `Xvfb` needs to be installed and run:
+## Testing
 
-```shell
-Xvfb :99.0
-```
-This sets up a headless x server running on DISPLAY :99.0, then some apps needs to be run in this new server:
-
-```shell
-env DISPLAY=:99.0 gpick
-env DISPLAY=:99.0 i3 -c /etc/i3/config
-```
-
-refer to [.travis.yml](https://github.com/roosta/i3wsr/blob/master/.travis.yml) for a CI example
+To run tests locally [Vagrant](https://www.vagrantup.com/) is required. Run
+`script/run_tests.sh` to run tests on ubuntu xenial.
 
 ## Attribution
 This program would not be possible without

@@ -6,6 +6,28 @@ i3wsr - i3 workspace renamer
 `i3wsr` is a small program that uses [I3's](https://i3wm.org/) [IPC Interface](https://i3wm.org/docs/ipc.html)
 to change the name of a workspace based on its contents.
 
+## Table of content
+
+* [Installation](#installation)
+  * [Arch linux](#arch-linux)
+* [Usage](#usage)
+* [i3 configuration](#i3-configuration)
+* [Configuration / options](#configuration--options)
+  * [Aliases](#aliases)
+  * [WM Property](#wm-property)
+    * [Class](#class)
+    * [Instance](#instance)
+    * [Name](#name)
+  * [Icons](#icons)
+  * [Separator](#separator)
+  * [Default icon](#default-icon)
+  * [No icon names](#no-icon-names)
+  * [No names](#no-names)
+  * [Remove duplicates](#remove-duplicates)
+* [Sway](#sway)
+* [Testing](#testing)
+* [Attribution](#attribution)
+
 ## Details
 
 The chosen name for a workspace is a composite of the `WM_CLASS` X11 window
@@ -24,7 +46,9 @@ sudo apt-get install libxcb1-dev
 
 Refer to [#18](https://github.com/roosta/i3wsr/issues/18) for more.
 
+
 ## Installation
+
 [Rust](https://www.rust-lang.org/en-US/), and [Cargo](http://doc.crates.io/) is
 required, and `i3wsr` can be installed using cargo like so:
 
@@ -164,7 +188,7 @@ Aliases will also match on instance:
 
 #### Name
 
-Uses the WM_NAME property, this option is very verbose and relies on regex
+Uses WM_NAME instead of WM_CLASS, this option is very verbose and relies on regex
 matching of aliases to be of any use.
 
 A use-case is running some terminal application, and as default i3wsr will only

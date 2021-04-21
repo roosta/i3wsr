@@ -9,7 +9,7 @@ readme = "README.md"
 keywords = ["i3-wm", "window-manager", "workspaces", "linux"]
 categories = ["command-line-utilities"]
 license = "MIT"
-exclude = ["TODOs.org*", "/script", "/assets/*"]
+exclude = ["TODOs.org*", "/script", "/assets/*", "Vagrantfile"]
 
 [badges]
 travis-ci = { repository = "roosta/i3wsr" }

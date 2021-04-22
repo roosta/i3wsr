@@ -27,6 +27,10 @@ extern crate lazy_static;
 
 extern crate toml;
 
+extern crate encoding;
+use encoding::{Encoding, DecoderTrap};
+use encoding::all::ISO_8859_1;
+
 pub mod config;
 pub mod icons;
 pub mod regex;
@@ -70,8 +74,15 @@ fn get_property(
     );
 
     let reply = cookie.get_reply()?;
-    let reply = std::str::from_utf8(reply.value())?.to_string();
-    Ok(reply)
+    if let Ok(s) = std::str::from_utf8(reply.value()) {
+        Ok(s.to_string())
+    } else {
+        let decoded = ISO_8859_1.decode(reply.value(), DecoderTrap::Strict);
+        match decoded {
+            Ok(s) => Ok(s),
+            Err(_) => Ok(String::new()),
+        }
+    }
 }
 
 /// Gets a window title, depends on wm_property config opt

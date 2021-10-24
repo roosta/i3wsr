@@ -85,6 +85,7 @@ workspace name. So your I3 configuration need to reflect this:
 
 ```
 bindsym $mod+1 workspace number 1
+assign [class="(?i)firefox"] number 1
 ```
 
 If you're like me and don't necessarily bind your workspaces to only numbers, or
@@ -92,6 +93,7 @@ you want to keep a part of the name constant you can do like this:
 
 ```
 bindsym $mod+q workspace number 1:[Q]
+assign [class="(?i)firefox"] number 1:[Q]
 ```
 
 This way the workspace would look something like this when it gets changed:

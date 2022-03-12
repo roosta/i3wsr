@@ -1,4 +1,5 @@
 [package]
+edition = "2021"
 name = "i3wsr"
 version = "2.0.1"
 description = "Change i3-wm workspace names based on its contents"
@@ -26,6 +27,7 @@ serde = { version = "1.0.111", features = ["derive"] }
 itertools = "0.9.0"
 regex = "1"
 encoding = "0.2"
+dirs = "4.0.0"
 
 [dependencies.i3ipc]
 version = "0.10.1"

@@ -1,6 +1,6 @@
 use failure::Error;
 use libre::Regex;
-use Config;
+use crate::Config;
 
 pub type Point = (Regex, String);
 

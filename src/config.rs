@@ -3,6 +3,7 @@ use serde::Deserialize;
 use std::collections::HashMap as Map;
 use std::fs::File;
 use std::io::Read;
+use std::path::Path;
 
 lazy_static! {
     pub static ref EMPTY_MAP: Map<String, String> = Map::new();
@@ -18,6 +19,20 @@ pub struct Config {
     pub options: Map<String, bool>,
 }
 
+impl Config {
+    pub fn new(filename: &Path, icons_override: &str) -> Result<Self, Error> {
+        let file_config = read_toml_config(filename)?;
+        Ok(Config {
+            icons: file_config
+                .icons
+                .into_iter()
+                .chain(crate::icons::get_icons(icons_override))
+                .collect(),
+            ..file_config
+        })
+    }
+}
+
 impl Default for Config {
     fn default() -> Self {
         Config {
@@ -29,7 +44,7 @@ impl Default for Config {
     }
 }
 
-pub fn read_toml_config(filename: &str) -> Result<Config, Error> {
+fn read_toml_config(filename: &Path) -> Result<Config, Error> {
     let mut file = File::open(filename)?;
     let mut buffer = String::new();
     file.read_to_string(&mut buffer)?;

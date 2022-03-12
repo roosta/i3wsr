@@ -110,7 +110,9 @@ You can take this a bit further by using a bar that trims the workspace number a
 
 Configuration for i3wsr can be done using cmd flags, or a config file. A config
 file allows for more nuanced settings, and is required to configure icons and
-aliases. To use a config file pass to the `--config` option on invocation:
+aliases. By default i3wsr looks for the config file at
+`$XDG_HOME/.config/i3swr/config.toml` or `$XDG_CONFIG_HOME/i3swr/config.toml`.
+To specify another path, pass it to the `--config` option on invocation:
 ```bash
 i3wsr --config ~/my_config.toml
 ```

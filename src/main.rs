@@ -1,5 +1,5 @@
 extern crate i3ipc;
-use std::{path::Path, fmt::format};
+use std::{path::Path};
 
 use dirs::config_dir;
 use failure::ResultExt;
@@ -16,7 +16,7 @@ use exitfailure::ExitFailure;
 extern crate clap;
 use clap::{App, Arg};
 
-use i3wsr::config::{self, Config};
+use i3wsr::config::{Config};
 
 fn main() -> Result<(), ExitFailure> {
     let matches = App::new("i3wsr - i3 workspace renamer")

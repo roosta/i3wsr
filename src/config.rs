@@ -10,8 +10,8 @@ lazy_static! {
     pub static ref EMPTY_OPT_MAP: Map<String, bool> = Map::new();
 }
 
-#[serde(default)]
 #[derive(Deserialize)]
+#[serde(default)]
 pub struct Config {
     pub icons: Map<String, char>,
     pub aliases: Map<String, String>,

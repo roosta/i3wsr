@@ -1,4 +1,8 @@
 extern crate i3ipc;
+use std::{path::Path, fmt::format};
+
+use dirs::config_dir;
+use failure::ResultExt;
 use i3ipc::{event::Event, I3Connection, I3EventListener, Subscription};
 
 extern crate xcb;
@@ -12,7 +16,7 @@ use exitfailure::ExitFailure;
 extern crate clap;
 use clap::{App, Arg};
 
-use i3wsr::config;
+use i3wsr::config::{self, Config};
 
 fn main() -> Result<(), ExitFailure> {
     let matches = App::new("i3wsr - i3 workspace renamer")
@@ -66,30 +70,24 @@ fn main() -> Result<(), ExitFailure> {
     let no_names = matches.is_present("no-names");
     let remove_duplicates = matches.is_present("remove-duplicates");
     let wm_property = matches.is_present("wm-property");
+    let mut default_config = config_dir().unwrap();
+    default_config.push("i3wsr/config.toml");
+    let mut config_path_used: Option<&Path> = None;
     let mut config = match matches.value_of("config") {
         Some(filename) => {
-            let file_config = match config::read_toml_config(filename) {
-                Ok(config) => config,
-                Err(e) => panic!("Could not parse config file\n {}", e),
-            };
-            config::Config {
-                icons: file_config
-                    .icons
-                    .into_iter()
-                    .chain(i3wsr::icons::get_icons(&icons))
-                    .collect(),
-                aliases: file_config.aliases,
-                general: file_config.general,
-                options: file_config.options
+            let config_file = Path::new(filename);
+            config_path_used = Some(config_file);
+            Config::new(config_file, icons)
+        },
+        None => {
+            if (&default_config).exists() {
+                config_path_used = Some(&default_config);
+                Config::new(&default_config, icons)
+            } else {
+                Ok(Config {icons: i3wsr::icons::get_icons(icons), ..Default::default()})
             }
         }
-        None => config::Config {
-            icons: i3wsr::icons::get_icons(&icons),
-            aliases: config::EMPTY_MAP.clone(),
-            general: config::EMPTY_MAP.clone(),
-            options: config::EMPTY_OPT_MAP.clone(),
-        },
-    };
+    }.context(format!("Could not parse config file:\n {:?}", config_path_used.unwrap()))?;
 
     if no_icon_names {
         config.options.insert("no_icon_names".to_string(), no_icon_names);

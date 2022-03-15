@@ -87,7 +87,7 @@ fn main() -> Result<(), ExitFailure> {
                 Ok(Config {icons: i3wsr::icons::get_icons(icons), ..Default::default()})
             }
         }
-    }.context(format!("Could not parse config file:\n {:?}", config_path_used.unwrap()))?;
+    }.with_context(|_|format!("Could not parse config file:\n {:?}", config_path_used.unwrap()))?;
 
     if no_icon_names {
         config.options.insert("no_icon_names".to_string(), no_icon_names);

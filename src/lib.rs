@@ -316,7 +316,7 @@ pub fn handle_window_event(
     res: &Vec<regex::Point>,
 ) -> Result<(), Error> {
     match e.change {
-        WindowChange::New | WindowChange::Close | WindowChange::Move => {
+        WindowChange::New | WindowChange::Close | WindowChange::Move | WindowChange::Title => {
             update_tree(x_conn, i3_conn, config, res)?;
         }
         _ => (),

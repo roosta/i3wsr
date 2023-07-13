@@ -16,7 +16,7 @@ exclude = ["TODOs.org*", "/script", "/assets/*", "Vagrantfile"]
 travis-ci = { repository = "roosta/i3wsr" }
 
 [dependencies]
-xcb = "0.9"
+xcb = "1.2.1"
 exitfailure = "0.5.1"
 failure = "0.1.8"
 failure_derive = "0.1.8"

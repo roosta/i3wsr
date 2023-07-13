@@ -1,5 +1,6 @@
 extern crate xcb;
-use xcb::xproto;
+use xcb::{x, XidNew};
+
 extern crate itertools;
 use itertools::Itertools;
 
@@ -59,21 +60,20 @@ fn get_option(config: &Config, key: &str) -> bool {
 fn get_property(
     conn: &xcb::Connection,
     id: u32,
-    prop: xproto::Atom,
+    property: x::Atom,
 ) -> Result<String, Error> {
-    let window: xproto::Window = id;
 
-    let cookie = xproto::get_property(
-        &conn,
-        false,
+    let window = unsafe{ XidNew::new(id) };
+    let cookie = conn.send_request(&x::GetProperty {
+        delete: false,
         window,
-        prop,
-        xproto::ATOM_STRING,
-        0,
-        1024,
-    );
+        property,
+        r#type: x::ATOM_STRING,
+        long_offset: 0,
+        long_length: 1024,
+    });
 
-    let reply = cookie.get_reply()?;
+    let reply = conn.wait_for_reply(cookie)?;
     if let Ok(s) = std::str::from_utf8(reply.value()) {
         Ok(s.to_string())
     } else {
@@ -98,7 +98,7 @@ fn get_title(
         None => "class",
     };
 
-    let reply = get_property(&conn, id, xproto::ATOM_WM_CLASS)?;
+    let reply = get_property(&conn, id, x::ATOM_WM_CLASS)?;
     let result: Vec<&str> = reply.split('\0').collect();
 
     // Store wm_class
@@ -124,7 +124,7 @@ fn get_title(
 
     // Store window name, fall back to class
     let wm_name = {
-        let name = get_property(&conn, id, xproto::ATOM_WM_NAME)?;
+        let name = get_property(&conn, id, x::ATOM_WM_NAME)?;
         if name.is_empty() {
             wm_class.to_string()
         } else {
@@ -179,25 +179,6 @@ fn get_title(
             }
         },
     })
-}
-
-/// Checks if window is of type normal. The problem with this is that not all
-/// windows define a type (spotify, I'm looking at you) Also, even if the window
-/// type is normal, the class returned will be the same regardless of type, and
-/// it won't trigger a change. We do end up doing some redundant calculations by
-/// not using this but makes the program much more forgiving.
-fn _is_normal(conn: &xcb::Connection, id: u32) -> Result<bool, Error> {
-    let window: xproto::Window = id;
-    let ident = xcb::intern_atom(&conn, true, "_NET_WM_WINDOW_TYPE")
-        .get_reply()?
-        .atom();
-    let reply = xproto::get_property(&conn, false, window, ident, xproto::ATOM_ATOM, 0, 1024)
-        .get_reply()?;
-    let actual: u32 = reply.value()[0];
-    let expected: u32 = xcb::intern_atom(&conn, true, "_NET_WM_WINDOW_TYPE_NORMAL")
-        .get_reply()?
-        .atom();
-    Ok(actual == expected)
 }
 
 /// return a collection of workspace nodes

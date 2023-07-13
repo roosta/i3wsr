@@ -172,9 +172,9 @@ This is the default, and the most succinct.
 
 #### Instance
 
-Use WM_INSTANCE instead of WM_CLASS when assigning workspace names, instance is
-usually more specific. i3wsr will try to match icon with instance, and if that
-fail, will fall back to class.
+Use WM\_INSTANCE instead of WM\_CLASS when assigning workspace names, instance
+is usually more specific. i3wsr will try to get the instance but if it isn't
+defined will use class instead.
 
 A use case for this option could be launching `chromium
 --app="https://web.whatsapp.com"`, and then assign a different icon to whatsapp

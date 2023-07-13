@@ -33,7 +33,7 @@ to change the name of a workspace based on its contents.
 The chosen name for a workspace is a composite of the `WM_CLASS` X11 window
 property for each window in a workspace. In action it would look something like this:
 
-![](https://raw.githubusercontent.com/roosta/i3wsr/master/assets/preview.gif)
+![](https://raw.githubusercontent.com/roosta/i3wsr/main/assets/preview.gif)
 ## Requirements
 
 i3wsr requires [XCB](https://xcb.freedesktop.org/), if you get compilation

@@ -18,7 +18,7 @@ use i3ipc::{
 #[macro_use]
 extern crate failure_derive;
 extern crate failure;
-use failure::Error;
+use failure::{ Error, err_msg };
 
 extern crate serde;
 
@@ -99,29 +99,43 @@ fn get_title(
     };
 
     let reply = get_property(&conn, id, xproto::ATOM_WM_CLASS)?;
-    let mut reply = reply.split('\0');
-
-    // Store vm_instance, leaving only class in results
-    let wm_instance = reply
-        .next()
-        .ok_or_else(|| LookupError::WindowInstance(id))?;
+    let result: Vec<&str> = reply.split('\0').collect();
 
     // Store wm_class
-    let wm_class = reply.next().ok_or_else(|| LookupError::WindowClass(id))?;
+    // use pattern matching for vector slice to extract class depending on position
+    let wm_class = match result[..] {
+        [class] => class,
+        [_, class] => class,
+        [_, class, ..] => class,
+        _ => {
+            return Err(err_msg(LookupError::WindowClass(id)))
+        }
+    };
+
+    // Store vm_instance, default to class if non is present
+    let wm_instance = match result[..] {
+        [class] => class,
+        [instance, _] => instance,
+        [instance, _, ..] => instance,
+        _ => {
+            return Err(err_msg(LookupError::WindowInstance(id)))
+        }
+    };
+
+    // Store window name, fall back to class
+    let wm_name = {
+        let name = get_property(&conn, id, xproto::ATOM_WM_NAME)?;
+        if name.is_empty() {
+            wm_class.to_string()
+        } else {
+            name
+        }
+    };
 
     // Set target from options
     let target = match use_prop {
-        "class" => wm_class.to_string(),
         "instance" => wm_instance.to_string(),
-        "name" => {
-            let name = get_property(&conn, id, xproto::ATOM_WM_NAME)?;
-            if name.is_empty() {
-                wm_class.to_string()
-            } else {
-                name
-            }
-
-        },
+        "name" => wm_name,
         _ => wm_class.to_string()
     };
 
@@ -136,18 +150,11 @@ fn get_title(
         }
     };
 
-    // either use icon for wm_instance, or fall back to icon for class
-    let key = if config.icons.contains_key(title) {
-        title
-    } else {
-        wm_class
-    };
-
     let no_names = get_option(&config, "no_names");
     let no_icon_names = get_option(&config, "no_icon_names");
 
     // Format final result
-    Ok(match config.icons.get(key) {
+    Ok(match config.icons.get(title) {
         Some(icon) => {
             if no_icon_names || no_names {
                 format!("{}", icon)

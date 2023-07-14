@@ -1,83 +1,82 @@
-extern crate i3ipc;
 use std::{path::Path};
-
 use dirs::config_dir;
-use i3ipc::{event::Event, I3Connection, I3EventListener, Subscription};
-
-extern crate xcb;
-
-extern crate i3wsr;
-
-#[macro_use]
-extern crate clap;
-use clap::{App, Arg};
+use i3ipc::{
+    event::Event,
+    I3Connection,
+    I3EventListener,
+    Subscription
+};
 use std::error::Error;
-
 use i3wsr::config::{Config};
+use clap::{Parser, ValueEnum};
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+enum Icons {
+    Awesome,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+enum Properties {
+    Class,
+    Instance,
+    Name
+}
+
+/// i3wsr config
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+
+    /// Path to toml config file
+    #[arg(short, long)]
+    config: Option<String>,
+
+    /// Sets icons to be used
+    #[arg(short, long)]
+    icons: Option<Icons>,
+
+    /// Display only icon (if available) otherwise display name
+    #[arg(short = 'm', long)]
+    no_icon_names: bool,
+
+    /// Do not display names
+    #[arg(short, long)]
+    no_names: bool,
+
+    /// Remove duplicate entries in workspace
+    #[arg(short, long)]
+    remove_duplicates: bool,
+
+    /// Which window property to use
+    #[arg(short = 'p', long)]
+    wm_property: Option<Properties>
+
+}
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let matches = App::new("i3wsr - i3 workspace renamer")
-        .version(crate_version!())
-        .author("Daniel Berg <mail@roosta.sh>")
-        .arg(
-            Arg::with_name("icons")
-                .long("icons")
-                .short("i")
-                .help("Sets icons to be used")
-                .possible_values(&["awesome"])
-                .takes_value(true)
-        )
-        .arg(
-            Arg::with_name("no-icon-names")
-                .long("no-icon-names")
-                .short("m")
-                .help("Display only icon (if available) otherwise display name"),
-        )
-        .arg(
-            Arg::with_name("no-names")
-                .long("no-names")
-                .short("n")
-                .help("Do not display names")
-        )
-        .arg(
-            Arg::with_name("config")
-                .long("config")
-                .short("c")
-                .help("Path to toml config file")
-                .takes_value(true)
-        )
-        .arg(
-            Arg::with_name("remove-duplicates")
-                .long("remove-duplicates")
-                .short("r")
-                .help("Remove duplicate entries in workspace")
-        )
-        .arg(
-            Arg::with_name("wm-property")
-                .long("wm-property")
-                .short("p")
-                .help("Which window property to use when matching alias, icons")
-                .possible_values(&["class", "instance", "name"])
-                .takes_value(true)
-        )
-        .get_matches();
+    let args = Args::parse();
 
-    // Parse cmd args
-    let icons = matches.value_of("icons").unwrap_or("");
-    let no_icon_names = matches.is_present("no-icon-names");
-    let no_names = matches.is_present("no-names");
-    let remove_duplicates = matches.is_present("remove-duplicates");
-    let wm_property = matches.is_present("wm-property");
-    let default_config = config_dir().unwrap().join("i3wsr/config.toml");
+    // icons
+    // Not really that useful this opt but keeping for posterity
+    let icons = match args.icons {
+        Some(icons) => {
+            match icons {
+                Icons::Awesome => "awesome",
+            }
+        },
+        None => ""
+    };
 
     // handle config
-    let config_result = match matches.value_of("config") {
+    let xdg_config = config_dir().unwrap().join("i3wsr/config.toml");
+    let config_result = match args.config.as_deref() {
         Some(filename) => {
+            println!("{filename}");
             Config::new(Path::new(filename), icons)
         },
         None => {
-            if (default_config).exists() {
-                Config::new(&default_config, icons)
+            if (xdg_config).exists() {
+                Config::new(&xdg_config, icons)
             } else {
                 Ok(Config {
                     icons: i3wsr::icons::get_icons(icons),
@@ -86,23 +85,38 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
         }
     };
+
     let mut config = match config_result {
         Ok(c) => c,
         Err(e) => panic!("Error with config file: {}", e)
     };
-    if no_icon_names {
-        config.options.insert("no_icon_names".to_string(), no_icon_names);
+
+
+    // Flags
+    if args.no_icon_names {
+        config.options.insert("no_icon_names".to_string(), args.no_icon_names);
     }
-    if no_names {
-        config.options.insert("no_names".to_string(), no_names);
+
+    if args.no_names {
+        config.options.insert("no_names".to_string(), args.no_names);
     }
-    if remove_duplicates {
-        config.options.insert("remove_duplicates".to_string(), remove_duplicates);
+
+    if args.remove_duplicates {
+        config.options.insert("remove_duplicates".to_string(), args.remove_duplicates);
     }
-    if wm_property {
-        let v = matches.value_of("wm-property").unwrap_or("class");
-        config.general.insert("wm_property".to_string(), v.to_string());
-    }
+
+    // wm property
+    let wm_property = match args.wm_property {
+        Some(prop) => {
+            match prop {
+                Properties::Class => String::from("class"),
+                Properties::Instance => String::from("instance"),
+                Properties::Name => String::from("name")
+            }
+        },
+        None => String::from("class")
+    };
+    config.general.insert("wm_property".to_string(), wm_property);
 
     let res = i3wsr::regex::parse_config(&config)?;
     let mut listener = I3EventListener::connect()?;

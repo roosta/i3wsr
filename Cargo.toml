@@ -17,7 +17,7 @@ travis-ci = { repository = "roosta/i3wsr" }
 
 [dependencies]
 xcb = "1.2.1"
-clap = "2.33.1"
+clap = { version = "4.3.11", features = ["derive"] }
 toml = "0.5.6"
 serde = { version = "1.0.111", features = ["derive"] }
 itertools = "0.9.0"

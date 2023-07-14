@@ -18,9 +18,6 @@ use i3ipc::{
 
 extern crate serde;
 
-#[macro_use]
-extern crate lazy_static;
-
 extern crate toml;
 
 extern crate encoding;

@@ -1,23 +1,18 @@
 use serde::Deserialize;
-use std::collections::HashMap as Map;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
-
-lazy_static! {
-    pub static ref EMPTY_MAP: Map<String, String> = Map::new();
-    pub static ref EMPTY_OPT_MAP: Map<String, bool> = Map::new();
-}
 
 use std::error::Error;
 
 #[derive(Deserialize)]
 #[serde(default)]
 pub struct Config {
-    pub icons: Map<String, char>,
-    pub aliases: Map<String, String>,
-    pub general: Map<String, String>,
-    pub options: Map<String, bool>,
+    pub icons:   HashMap<String, char>,
+    pub aliases: HashMap<String, String>,
+    pub general: HashMap<String, String>,
+    pub options: HashMap<String, bool>,
 }
 
 impl Config {
@@ -37,10 +32,10 @@ impl Config {
 impl Default for Config {
     fn default() -> Self {
         Config {
-            icons: super::icons::NONE.clone(),
-            aliases: EMPTY_MAP.clone(),
-            general: EMPTY_MAP.clone(),
-            options: EMPTY_OPT_MAP.clone(),
+            icons:   HashMap::new(),
+            aliases: HashMap::new(),
+            general: HashMap::new(),
+            options: HashMap::new(),
         }
     }
 }

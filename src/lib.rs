@@ -336,12 +336,12 @@ pub fn handle_ws_event(
 
 #[cfg(test)]
 mod tests {
-    use failure::Error;
     use i3ipc::reply::NodeType;
     use std::env;
+    use std::error::Error;
 
     #[test]
-    fn connection_tree() -> Result<(), Error> {
+    fn connection_tree() -> Result<(), Box<dyn Error>> {
         env::set_var("DISPLAY", ":99.0");
         let (x_conn, _) = super::xcb::Connection::connect(None)?;
         let mut i3_conn = super::I3Connection::connect()?;
@@ -365,7 +365,7 @@ mod tests {
     }
 
     #[test]
-    fn get_title() -> Result<(), Error> {
+    fn get_title() -> Result<(), Box<dyn Error>> {
         env::set_var("DISPLAY", ":99.0");
         let (x_conn, _) = super::xcb::Connection::connect(None)?;
         let mut i3_conn = super::I3Connection::connect()?;
@@ -397,7 +397,7 @@ mod tests {
     }
 
     #[test]
-    fn collect_titles() -> Result<(), Error> {
+    fn collect_titles() -> Result<(), Box<dyn Error>> {
         env::set_var("DISPLAY", ":99.0");
         let (x_conn, _) = super::xcb::Connection::connect(None)?;
         let mut i3_conn = super::I3Connection::connect()?;
@@ -415,7 +415,7 @@ mod tests {
     }
 
     #[test]
-    fn get_ids() -> Result<(), Error> {
+    fn get_ids() -> Result<(), Box<dyn Error>> {
         env::set_var("DISPLAY", ":99.0");
         let mut i3_conn = super::I3Connection::connect()?;
         let tree = i3_conn.get_tree()?;

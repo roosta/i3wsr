@@ -9,7 +9,7 @@ use std::error::Error;
 #[derive(Deserialize)]
 #[serde(default)]
 pub struct Config {
-    pub icons:   HashMap<String, char>,
+    pub icons: HashMap<String, char>,
     pub aliases: HashMap<String, String>,
     pub general: HashMap<String, String>,
     pub options: HashMap<String, bool>,
@@ -32,7 +32,7 @@ impl Config {
 impl Default for Config {
     fn default() -> Self {
         Config {
-            icons:   HashMap::new(),
+            icons: HashMap::new(),
             aliases: HashMap::new(),
             general: HashMap::new(),
             options: HashMap::new(),

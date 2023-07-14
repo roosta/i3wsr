@@ -1,14 +1,9 @@
-use std::{path::Path};
-use dirs::config_dir;
-use i3ipc::{
-    event::Event,
-    I3Connection,
-    I3EventListener,
-    Subscription
-};
-use std::error::Error;
-use i3wsr::config::{Config};
 use clap::{Parser, ValueEnum};
+use dirs::config_dir;
+use i3ipc::{event::Event, I3Connection, I3EventListener, Subscription};
+use i3wsr::config::Config;
+use std::error::Error;
+use std::path::Path;
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 enum Icons {
@@ -19,14 +14,13 @@ enum Icons {
 enum Properties {
     Class,
     Instance,
-    Name
+    Name,
 }
 
 /// i3wsr config
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
-
     /// Path to toml config file
     #[arg(short, long)]
     config: Option<String>,
@@ -49,8 +43,7 @@ struct Args {
 
     /// Which window property to use
     #[arg(short = 'p', long)]
-    wm_property: Option<Properties>
-
+    wm_property: Option<Properties>,
 }
 
 /// Setup program by handling args and populating config
@@ -61,12 +54,10 @@ fn setup() -> Result<Config, Box<dyn Error>> {
     // icons
     // Not really that useful this opt but keeping for posterity
     let icons = match args.icons {
-        Some(icons) => {
-            match icons {
-                Icons::Awesome => "awesome",
-            }
+        Some(icons) => match icons {
+            Icons::Awesome => "awesome",
         },
-        None => ""
+        None => "",
     };
 
     // handle config
@@ -75,7 +66,7 @@ fn setup() -> Result<Config, Box<dyn Error>> {
         Some(filename) => {
             println!("{filename}");
             Config::new(Path::new(filename), icons)
-        },
+        }
         None => {
             if (xdg_config).exists() {
                 Config::new(&xdg_config, icons)
@@ -92,7 +83,9 @@ fn setup() -> Result<Config, Box<dyn Error>> {
 
     // Flags
     if args.no_icon_names {
-        config.options.insert("no_icon_names".to_string(), args.no_icon_names);
+        config
+            .options
+            .insert("no_icon_names".to_string(), args.no_icon_names);
     }
 
     if args.no_names {
@@ -100,21 +93,23 @@ fn setup() -> Result<Config, Box<dyn Error>> {
     }
 
     if args.remove_duplicates {
-        config.options.insert("remove_duplicates".to_string(), args.remove_duplicates);
+        config
+            .options
+            .insert("remove_duplicates".to_string(), args.remove_duplicates);
     }
 
     // wm property
     let wm_property = match args.wm_property {
-        Some(prop) => {
-            match prop {
-                Properties::Class => String::from("class"),
-                Properties::Instance => String::from("instance"),
-                Properties::Name => String::from("name")
-            }
+        Some(prop) => match prop {
+            Properties::Class => String::from("class"),
+            Properties::Instance => String::from("instance"),
+            Properties::Name => String::from("name"),
         },
-        None => String::from("class")
+        None => String::from("class"),
     };
-    config.general.insert("wm_property".to_string(), wm_property);
+    config
+        .general
+        .insert("wm_property".to_string(), wm_property);
     Ok(config)
 }
 
@@ -134,12 +129,15 @@ fn main() -> Result<(), Box<dyn Error>> {
     for event in listener.listen() {
         match event? {
             Event::WindowEvent(e) => {
-                if let Err(error) = i3wsr::handle_window_event(&e, &x_conn, &mut i3_conn, &config, &res) {
+                if let Err(error) =
+                    i3wsr::handle_window_event(&e, &x_conn, &mut i3_conn, &config, &res)
+                {
                     eprintln!("handle_window_event error: {}", error);
                 }
             }
             Event::WorkspaceEvent(e) => {
-                if let Err(error) = i3wsr::handle_ws_event(&e, &x_conn, &mut i3_conn, &config, &res) {
+                if let Err(error) = i3wsr::handle_ws_event(&e, &x_conn, &mut i3_conn, &config, &res)
+                {
                     eprintln!("handle_ws_event error: {}", error);
                 }
             }

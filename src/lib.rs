@@ -1,4 +1,5 @@
-use xcb::{x, XidNew};
+use encoding::all::ISO_8859_1;
+use encoding::{DecoderTrap, Encoding};
 use i3ipc::{
     event::{
         inner::{WindowChange, WorkspaceChange},
@@ -7,16 +8,15 @@ use i3ipc::{
     reply::{Node, NodeType},
     I3Connection,
 };
-use encoding::{Encoding, DecoderTrap};
-use encoding::all::ISO_8859_1;
 use itertools::Itertools;
+use xcb::{x, XidNew};
 
 pub mod config;
 pub mod icons;
 pub mod regex;
 
-use std::error::Error;
 use config::Config;
+use std::error::Error;
 
 /// Helper fn to get options via config
 fn get_option(config: &Config, key: &str) -> bool {
@@ -32,8 +32,7 @@ fn get_property(
     id: u32,
     property: x::Atom,
 ) -> Result<String, Box<dyn Error>> {
-
-    let window = unsafe{ XidNew::new(id) };
+    let window = unsafe { XidNew::new(id) };
     let cookie = conn.send_request(&x::GetProperty {
         delete: false,
         window,
@@ -62,7 +61,6 @@ fn get_title(
     config: &Config,
     res: &Vec<regex::Point>,
 ) -> Result<String, Box<dyn Error>> {
-
     let use_prop = match config.general.get("wm_property") {
         Some(prop) => prop,
         None => "class",
@@ -73,13 +71,11 @@ fn get_title(
 
     // Store wm_class
     // use pattern matching for vector slice to extract class depending on position
-    let [ wm_class, wm_instance ] = match result[..] {
-        [class] => [ class, "" ],
-        [instance, class] => [ class, instance ],
-        [instance, class, ..] => [ class, instance ],
-        _ => {
-            Err(format!("failed to get a instance for window id {}", id))?
-        }
+    let [wm_class, wm_instance] = match result[..] {
+        [class] => [class, ""],
+        [instance, class] => [class, instance],
+        [instance, class, ..] => [class, instance],
+        _ => Err(format!("failed to get a instance for window id {}", id))?,
     };
 
     // Store window name, fall back to class
@@ -100,20 +96,17 @@ fn get_title(
             } else {
                 wm_instance.to_string()
             }
-
-        },
+        }
         "name" => wm_name,
-        _ => wm_class.to_string()
+        _ => wm_class.to_string(),
     };
 
     // Check for aliases using pre-compiled regex
     let title = {
-        let mut filtered = res.iter().filter(|(re, _)| {
-            re.is_match(&target)
-        });
+        let mut filtered = res.iter().filter(|(re, _)| re.is_match(&target));
         match filtered.next() {
             Some((_, alias)) => alias,
-            None => &target
+            None => &target,
         }
     };
 
@@ -131,7 +124,7 @@ fn get_title(
         }
         None => match config.general.get("default_icon") {
             Some(default_icon) => {
-                if no_icon_names || no_names  {
+                if no_icon_names || no_names {
                     format!("{}", default_icon)
                 } else {
                     format!("{} {}", default_icon, title)
@@ -188,7 +181,6 @@ fn collect_titles(
     config: &Config,
     res: &Vec<regex::Point>,
 ) -> Vec<String> {
-
     let window_ids = {
         let mut f = get_ids(vec![workspace.floating_nodes.iter().collect()]);
         let mut n = get_ids(vec![workspace.nodes.iter().collect()]);
@@ -232,7 +224,10 @@ pub fn update_tree(
             titles
         };
         let titles = if get_option(&config, "no_names") {
-            titles.into_iter().filter(|s| !s.is_empty()).collect::<Vec<String>>()
+            titles
+                .into_iter()
+                .filter(|s| !s.is_empty())
+                .collect::<Vec<String>>()
         } else {
             titles
         };
@@ -242,14 +237,12 @@ pub fn update_tree(
         } else {
             titles
         };
-        let old: String = workspace.name
-            .to_owned()
-            .ok_or_else(|| {
-                format!(
-                    "Failed to get workspace name for workspace: {:#?}",
-                    workspace
-                )
-            })?;
+        let old: String = workspace.name.to_owned().ok_or_else(|| {
+            format!(
+                "Failed to get workspace name for workspace: {:#?}",
+                workspace
+            )
+        })?;
 
         let mut new = old.split(' ').next().unwrap().to_owned();
 

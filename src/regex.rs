@@ -1,5 +1,5 @@
-use regex::Regex;
 use crate::Config;
+use regex::Regex;
 use std::error::Error;
 
 pub type Point = (Regex, String);

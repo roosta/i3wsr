@@ -304,11 +304,12 @@ mod tests {
     use i3ipc::reply::NodeType;
     use std::env;
     use std::error::Error;
+    use xcb::Connection;
 
     #[test]
     fn connection_tree() -> Result<(), Box<dyn Error>> {
         env::set_var("DISPLAY", ":99.0");
-        let (x_conn, _) = super::xcb::Connection::connect(None)?;
+        let (x_conn, _) = Connection::connect(None)?;
         let mut i3_conn = super::I3Connection::connect()?;
         let config = super::Config::default();
         let res = super::regex::parse_config(&config)?;
@@ -332,7 +333,7 @@ mod tests {
     #[test]
     fn get_title() -> Result<(), Box<dyn Error>> {
         env::set_var("DISPLAY", ":99.0");
-        let (x_conn, _) = super::xcb::Connection::connect(None)?;
+        let (x_conn, _) = Connection::connect(None)?;
         let mut i3_conn = super::I3Connection::connect()?;
         let tree = i3_conn.get_tree()?;
         let mut ids: Vec<u32> = Vec::new();
@@ -364,7 +365,7 @@ mod tests {
     #[test]
     fn collect_titles() -> Result<(), Box<dyn Error>> {
         env::set_var("DISPLAY", ":99.0");
-        let (x_conn, _) = super::xcb::Connection::connect(None)?;
+        let (x_conn, _) = Connection::connect(None)?;
         let mut i3_conn = super::I3Connection::connect()?;
         let tree = i3_conn.get_tree()?;
         let workspaces = super::get_workspaces(tree);

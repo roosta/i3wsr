@@ -53,7 +53,9 @@ struct Args {
 
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
+/// Setup program by handling args and populating config
+/// Returns result containing config
+fn setup() -> Result<Config, Box<dyn Error>> {
     let args = Args::parse();
 
     // icons
@@ -86,11 +88,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     };
 
-    let mut config = match config_result {
-        Ok(c) => c,
-        Err(e) => panic!("Error with config file: {}", e)
-    };
-
+    let mut config = config_result?;
 
     // Flags
     if args.no_icon_names {
@@ -117,7 +115,13 @@ fn main() -> Result<(), Box<dyn Error>> {
         None => String::from("class")
     };
     config.general.insert("wm_property".to_string(), wm_property);
+    Ok(config)
+}
 
+/// Entry main loop: continusly listen to i3 window events and workspace events, or exit on
+/// abnormal error.
+fn main() -> Result<(), Box<dyn Error>> {
+    let config = setup()?;
     let res = i3wsr::regex::parse_config(&config)?;
     let mut listener = I3EventListener::connect()?;
     let subs = [Subscription::Window, Subscription::Workspace];
@@ -142,6 +146,5 @@ fn main() -> Result<(), Box<dyn Error>> {
             _ => {}
         }
     }
-
     Ok(())
 }

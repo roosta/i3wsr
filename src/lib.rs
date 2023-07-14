@@ -16,10 +16,10 @@ use i3ipc::{
     I3Connection,
 };
 
-#[macro_use]
-extern crate failure_derive;
-extern crate failure;
-use failure::{ Error, err_msg };
+// #[macro_use]
+// extern crate failure_derive;
+// extern crate failure;
+// use failure::{ Error, err_msg };
 
 extern crate serde;
 
@@ -36,17 +36,22 @@ pub mod config;
 pub mod icons;
 pub mod regex;
 
+use std::error::Error;
+
 use config::Config;
 
-#[derive(Debug, Fail)]
-enum LookupError {
-    #[fail(display = "Failed to get a class for window id: {}", _0)]
-    WindowClass(u32),
-    #[fail(display = "Failed to get a instance for window id: {}", _0)]
-    WindowInstance(u32),
-    #[fail(display = "Failed to get title for workspace: {:#?}", _0)]
-    WorkspaceTitle(Box<Node>),
-}
+#[derive(Debug)]
+struct MyError(String);
+
+// #[derive(Debug)]
+// enum LookupError {
+//     #[fail(display = "Failed to get a class for window id: {}", _0)]
+//     WindowClass(u32),
+//     #[fail(display = "Failed to get a instance for window id: {}", _0)]
+//     WindowInstance(u32),
+//     #[fail(display = "Failed to get title for workspace: {:#?}", _0)]
+//     WorkspaceTitle(Box<Node>),
+// }
 
 /// Helper fn to get options via config
 fn get_option(config: &Config, key: &str) -> bool {
@@ -61,7 +66,7 @@ fn get_property(
     conn: &xcb::Connection,
     id: u32,
     property: x::Atom,
-) -> Result<String, Error> {
+) -> Result<String, Box<dyn Error>> {
 
     let window = unsafe{ XidNew::new(id) };
     let cookie = conn.send_request(&x::GetProperty {
@@ -91,7 +96,7 @@ fn get_title(
     id: u32,
     config: &Config,
     res: &Vec<regex::Point>,
-) -> Result<String, Error> {
+) -> Result<String, Box<dyn Error>> {
 
     let use_prop = match config.general.get("wm_property") {
         Some(prop) => prop,
@@ -103,22 +108,12 @@ fn get_title(
 
     // Store wm_class
     // use pattern matching for vector slice to extract class depending on position
-    let wm_class = match result[..] {
-        [class] => class,
-        [_, class] => class,
-        [_, class, ..] => class,
+    let [ wm_class, wm_instance ] = match result[..] {
+        [class] => [ class, "" ],
+        [instance, class] => [ class, instance ],
+        [instance, class, ..] => [ class, instance ],
         _ => {
-            return Err(err_msg(LookupError::WindowClass(id)))
-        }
-    };
-
-    // Store vm_instance, default to class if non is present
-    let wm_instance = match result[..] {
-        [class] => class,
-        [instance, _] => instance,
-        [instance, _, ..] => instance,
-        _ => {
-            return Err(err_msg(LookupError::WindowInstance(id)))
+            Err(format!("Failed to get a instance for window id: {}", id))?
         }
     };
 
@@ -134,7 +129,14 @@ fn get_title(
 
     // Set target from options
     let target = match use_prop {
-        "instance" => wm_instance.to_string(),
+        "instance" => {
+            if wm_instance.is_empty() {
+                wm_class.to_string()
+            } else {
+                wm_instance.to_string()
+            }
+
+        },
         "name" => wm_name,
         _ => wm_class.to_string()
     };
@@ -250,7 +252,7 @@ pub fn update_tree(
     i3_conn: &mut I3Connection,
     config: &Config,
     res: &Vec<regex::Point>,
-) -> Result<(), Error> {
+) -> Result<(), Box<dyn Error>> {
     let tree = i3_conn.get_tree()?;
     for workspace in get_workspaces(tree) {
         let separator = match config.general.get("separator") {
@@ -275,11 +277,14 @@ pub fn update_tree(
         } else {
             titles
         };
-
-        let old: String = workspace
-            .name
+        let old: String = workspace.name
             .to_owned()
-            .ok_or_else(|| LookupError::WorkspaceTitle(Box::new(workspace)))?;
+            .ok_or_else(|| {
+                format!(
+                    "Failed to get workspace name for workspace: {:#?}",
+                    workspace
+                )
+            })?;
 
         let mut new = old.split(' ').next().unwrap().to_owned();
 
@@ -302,7 +307,7 @@ pub fn handle_window_event(
     i3_conn: &mut I3Connection,
     config: &Config,
     res: &Vec<regex::Point>,
-) -> Result<(), Error> {
+) -> Result<(), Box<dyn Error>> {
     match e.change {
         WindowChange::New | WindowChange::Close | WindowChange::Move | WindowChange::Title => {
             update_tree(x_conn, i3_conn, config, res)?;
@@ -319,7 +324,7 @@ pub fn handle_ws_event(
     i3_conn: &mut I3Connection,
     config: &Config,
     res: &Vec<regex::Point>,
-) -> Result<(), Error> {
+) -> Result<(), Box<dyn Error>> {
     match e.change {
         WorkspaceChange::Empty | WorkspaceChange::Focus => {
             update_tree(x_conn, i3_conn, config, res)?;

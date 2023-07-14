@@ -2,23 +2,20 @@ extern crate i3ipc;
 use std::{path::Path};
 
 use dirs::config_dir;
-use failure::ResultExt;
 use i3ipc::{event::Event, I3Connection, I3EventListener, Subscription};
 
 extern crate xcb;
 
 extern crate i3wsr;
 
-extern crate exitfailure;
-use exitfailure::ExitFailure;
-
 #[macro_use]
 extern crate clap;
 use clap::{App, Arg};
+use std::error::Error;
 
 use i3wsr::config::{Config};
 
-fn main() -> Result<(), ExitFailure> {
+fn main() -> Result<(), Box<dyn Error>> {
     let matches = App::new("i3wsr - i3 workspace renamer")
         .version(crate_version!())
         .author("Daniel Berg <mail@roosta.sh>")
@@ -65,30 +62,34 @@ fn main() -> Result<(), ExitFailure> {
         )
         .get_matches();
 
+    // Parse cmd args
     let icons = matches.value_of("icons").unwrap_or("");
     let no_icon_names = matches.is_present("no-icon-names");
     let no_names = matches.is_present("no-names");
     let remove_duplicates = matches.is_present("remove-duplicates");
     let wm_property = matches.is_present("wm-property");
-    let mut default_config = config_dir().unwrap();
-    default_config.push("i3wsr/config.toml");
-    let mut config_path_used: Option<&Path> = None;
-    let mut config = match matches.value_of("config") {
+    let default_config = config_dir().unwrap().join("i3wsr/config.toml");
+
+    // handle config
+    let config_result = match matches.value_of("config") {
         Some(filename) => {
-            let config_file = Path::new(filename);
-            config_path_used = Some(config_file);
-            Config::new(config_file, icons)
+            Config::new(Path::new(filename), icons)
         },
         None => {
-            if (&default_config).exists() {
-                config_path_used = Some(&default_config);
+            if (default_config).exists() {
                 Config::new(&default_config, icons)
             } else {
-                Ok(Config {icons: i3wsr::icons::get_icons(icons), ..Default::default()})
+                Ok(Config {
+                    icons: i3wsr::icons::get_icons(icons),
+                    ..Default::default()
+                })
             }
         }
-    }.with_context(|_|format!("Could not parse config file:\n {:?}", config_path_used.unwrap()))?;
-
+    };
+    let mut config = match config_result {
+        Ok(c) => c,
+        Err(e) => panic!("Error with config file: {}", e)
+    };
     if no_icon_names {
         config.options.insert("no_icon_names".to_string(), no_icon_names);
     }

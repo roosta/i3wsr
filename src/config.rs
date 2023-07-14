@@ -1,4 +1,3 @@
-use failure::Error;
 use serde::Deserialize;
 use std::collections::HashMap as Map;
 use std::fs::File;
@@ -10,6 +9,8 @@ lazy_static! {
     pub static ref EMPTY_OPT_MAP: Map<String, bool> = Map::new();
 }
 
+use std::error::Error;
+
 #[derive(Deserialize)]
 #[serde(default)]
 pub struct Config {
@@ -20,7 +21,7 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn new(filename: &Path, icons_override: &str) -> Result<Self, Error> {
+    pub fn new(filename: &Path, icons_override: &str) -> Result<Self, Box<dyn Error>> {
         let file_config = read_toml_config(filename)?;
         Ok(Config {
             icons: file_config
@@ -44,7 +45,7 @@ impl Default for Config {
     }
 }
 
-fn read_toml_config(filename: &Path) -> Result<Config, Error> {
+fn read_toml_config(filename: &Path) -> Result<Config, Box<dyn Error>> {
     let mut file = File::open(filename)?;
     let mut buffer = String::new();
     file.read_to_string(&mut buffer)?;

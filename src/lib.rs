@@ -113,7 +113,7 @@ fn get_title(
         [instance, class] => [ class, instance ],
         [instance, class, ..] => [ class, instance ],
         _ => {
-            Err(format!("Failed to get a instance for window id: {}", id))?
+            Err(format!("failed to get a instance for window id {}", id))?
         }
     };
 

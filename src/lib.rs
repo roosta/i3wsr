@@ -16,11 +16,6 @@ use i3ipc::{
     I3Connection,
 };
 
-// #[macro_use]
-// extern crate failure_derive;
-// extern crate failure;
-// use failure::{ Error, err_msg };
-
 extern crate serde;
 
 #[macro_use]
@@ -42,16 +37,6 @@ use config::Config;
 
 #[derive(Debug)]
 struct MyError(String);
-
-// #[derive(Debug)]
-// enum LookupError {
-//     #[fail(display = "Failed to get a class for window id: {}", _0)]
-//     WindowClass(u32),
-//     #[fail(display = "Failed to get a instance for window id: {}", _0)]
-//     WindowInstance(u32),
-//     #[fail(display = "Failed to get title for workspace: {:#?}", _0)]
-//     WorkspaceTitle(Box<Node>),
-// }
 
 /// Helper fn to get options via config
 fn get_option(config: &Config, key: &str) -> bool {

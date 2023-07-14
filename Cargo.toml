@@ -22,7 +22,7 @@ toml = "0.7.6"
 serde = { version = "1.0.171", features = ["derive"] }
 itertools = "0.11.0"
 regex = "1.9.1"
-encoding = "0.2"
+encoding = "0.2.33"
 dirs = "5.0.1"
 i3ipc = "0.10.1"
 

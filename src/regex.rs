@@ -1,4 +1,4 @@
-use libre::Regex;
+use regex::Regex;
 use crate::Config;
 use std::error::Error;
 

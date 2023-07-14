@@ -1,12 +1,4 @@
-extern crate xcb;
 use xcb::{x, XidNew};
-
-extern crate itertools;
-use itertools::Itertools;
-
-extern crate regex as libre;
-
-extern crate i3ipc;
 use i3ipc::{
     event::{
         inner::{WindowChange, WorkspaceChange},
@@ -15,25 +7,16 @@ use i3ipc::{
     reply::{Node, NodeType},
     I3Connection,
 };
-
-extern crate serde;
-
-extern crate toml;
-
-extern crate encoding;
 use encoding::{Encoding, DecoderTrap};
 use encoding::all::ISO_8859_1;
+use itertools::Itertools;
 
 pub mod config;
 pub mod icons;
 pub mod regex;
 
 use std::error::Error;
-
 use config::Config;
-
-#[derive(Debug)]
-struct MyError(String);
 
 /// Helper fn to get options via config
 fn get_option(config: &Config, key: &str) -> bool {

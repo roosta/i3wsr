@@ -341,8 +341,7 @@ mod tests {
         let mut i3_conn = super::I3Connection::connect()?;
         let config = super::Config::default();
         let res = super::regex::parse_config(&config)?;
-        let digit_re = regex::Regex::new(r"\d*$").unwrap();
-        assert!(super::update_tree(&x_conn, &mut i3_conn, &config, &res, &digit_re).is_ok());
+        assert!(super::update_tree(&x_conn, &mut i3_conn, &config, &res).is_ok());
         let tree = i3_conn.get_tree()?;
         let mut name: String = String::new();
         for output in &tree.nodes {
@@ -404,7 +403,7 @@ mod tests {
         for workspace in workspaces {
             result.push(super::collect_titles(&workspace, &x_conn, &config, &res));
         }
-        let expected = vec![vec![], vec!["Gpick", "XTerm"]];
+        let expected = vec![vec!["Gpick", "XTerm"]];
         assert_eq!(result, expected);
         Ok(())
     }

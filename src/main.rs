@@ -44,6 +44,10 @@ struct Args {
     /// Which window property to use
     #[arg(short = 'p', long)]
     wm_property: Option<Properties>,
+
+    /// What character used to split the workspace title string
+    #[arg(short = 'a', long)]
+    split_at: Option<String>
 }
 
 /// Setup program by handling args and populating config
@@ -98,6 +102,10 @@ fn setup() -> Result<Config, Box<dyn Error>> {
             .insert("remove_duplicates".to_string(), args.remove_duplicates);
     }
 
+    if let Some(split_char) = args.split_at {
+        config.general.insert("split_at".to_string(), split_char);
+    }
+
     // wm property
     let wm_property = match args.wm_property {
         Some(prop) => match prop {
@@ -120,6 +128,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let res = i3wsr::regex::parse_config(&config)?;
     let mut listener = I3EventListener::connect()?;
     let subs = [Subscription::Window, Subscription::Workspace];
+
     listener.subscribe(&subs)?;
 
     let (x_conn, _) = xcb::Connection::connect(None)?;

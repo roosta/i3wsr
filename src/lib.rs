@@ -14,9 +14,9 @@ use xcb::{x, XidNew};
 pub mod config;
 pub mod icons;
 pub mod regex;
-
 use config::Config;
 use std::error::Error;
+
 
 /// Helper fn to get options via config
 fn get_option(config: &Config, key: &str) -> bool {
@@ -215,7 +215,7 @@ pub fn update_tree(
     x_conn: &xcb::Connection,
     i3_conn: &mut I3Connection,
     config: &Config,
-    res: &Vec<regex::Point>,
+    res: &Vec<regex::Point>
 ) -> Result<(), Box<dyn Error>> {
     let tree = i3_conn.get_tree()?;
     for workspace in get_workspaces(tree) {
@@ -251,12 +251,40 @@ pub fn update_tree(
             )
         })?;
 
-        let mut new = old.split(' ').next().unwrap().to_owned();
 
+        // Get split_at arg
+        let split_at = match config.general.get("split_at") {
+            Some(s) => {
+                if !s.is_empty() {
+                    s.chars().next().unwrap()
+                } else {
+                    ' '
+                }
+
+            },
+            None => ' ',
+        };
+
+        // Get the initial element we want to keep
+        let initial = match old.split(split_at).next() {
+            Some(i) => i,
+            None => ""
+        };
+
+        let mut new: String = String::from(initial);
+
+        // if we do split on colon we need to insert a new one, cause it gets split out
+        if split_at == ':' && !initial.is_empty() {
+            new.push(':');
+        } else {
+
+        }
+        // Push new window titles to new string
         if !titles.is_empty() {
             new.push_str(&titles);
         }
 
+        // Dispatch to i3
         if old != new {
             let command = format!("rename workspace \"{}\" to \"{}\"", old, new);
             i3_conn.run_command(&command)?;
@@ -271,7 +299,7 @@ pub fn handle_window_event(
     x_conn: &xcb::Connection,
     i3_conn: &mut I3Connection,
     config: &Config,
-    res: &Vec<regex::Point>,
+    res: &Vec<regex::Point>
 ) -> Result<(), Box<dyn Error>> {
     match e.change {
         WindowChange::New | WindowChange::Close | WindowChange::Move | WindowChange::Title => {
@@ -288,7 +316,7 @@ pub fn handle_ws_event(
     x_conn: &xcb::Connection,
     i3_conn: &mut I3Connection,
     config: &Config,
-    res: &Vec<regex::Point>,
+    res: &Vec<regex::Point>
 ) -> Result<(), Box<dyn Error>> {
     match e.change {
         WorkspaceChange::Empty | WorkspaceChange::Focus => {
@@ -313,7 +341,8 @@ mod tests {
         let mut i3_conn = super::I3Connection::connect()?;
         let config = super::Config::default();
         let res = super::regex::parse_config(&config)?;
-        assert!(super::update_tree(&x_conn, &mut i3_conn, &config, &res).is_ok());
+        let digit_re = regex::Regex::new(r"\d*$").unwrap();
+        assert!(super::update_tree(&x_conn, &mut i3_conn, &config, &res, &digit_re).is_ok());
         let tree = i3_conn.get_tree()?;
         let mut name: String = String::new();
         for output in &tree.nodes {

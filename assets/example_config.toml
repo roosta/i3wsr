@@ -18,6 +18,7 @@ TelegramDesktop = "Telegram"
 separator = "  "
 default_icon = ""
 wm_property = "class"
+split_at = ":"
 
 [options]
 remove_duplicates = false

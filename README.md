@@ -1,10 +1,12 @@
 i3wsr - i3 workspace renamer
 ======
-[![Build Status](https://app.travis-ci.com/roosta/i3wsr.svg?branch=master)](https://app.travis-ci.com/roosta/i3wsr)
+[![Build Status](https://app.travis-ci.com/roosta/i3wsr.svg?branch=main)](https://app.travis-ci.com/roosta/i3wsr)
 [![Crates.io](https://img.shields.io/crates/v/i3wsr)](https://crates.io/crates/i3wsr)
 
 `i3wsr` is a small program that uses [I3's](https://i3wm.org/) [IPC Interface](https://i3wm.org/docs/ipc.html)
 to change the name of a workspace based on its contents.
+
+
 
 ## Table of content
 
@@ -33,7 +35,7 @@ to change the name of a workspace based on its contents.
 The chosen name for a workspace is a composite of the `WM_CLASS` X11 window
 property for each window in a workspace. In action it would look something like this:
 
-![](https://raw.githubusercontent.com/roosta/i3wsr/master/assets/preview.gif)
+![](https://raw.githubusercontent.com/roosta/i3wsr/main/assets/preview.gif)
 ## Requirements
 
 i3wsr requires [XCB](https://xcb.freedesktop.org/), if you get compilation
@@ -88,12 +90,15 @@ bindsym $mod+1 workspace number 1
 assign [class="(?i)firefox"] number 1
 ```
 
-If you're like me and don't necessarily bind your workspaces to only numbers, or
-you want to keep a part of the name constant you can do like this:
+### Keeping part of the workspace name
+
+If you're like me and don't necessarily bind your workspaces to only numbers,
+or you want to keep a part of the name constant you can do like this:
 
 ```
-bindsym $mod+q workspace number 1:[Q]
-assign [class="(?i)firefox"] number 1:[Q]
+set $myws "1:[Q]" # my sticky part
+bindsym $mod+q workspace number $myws
+assign [class="(?i)firefox"] number $myws
 ```
 
 This way the workspace would look something like this when it gets changed:
@@ -117,7 +122,7 @@ To specify another path, pass it to the `--config` option on invocation:
 i3wsr --config ~/my_config.toml
 ```
 Example config can be found in
-[assets/example_config.toml](https://github.com/roosta/i3wsr/blob/master/assets/example_config.toml).
+[assets/example\_config.toml](https://github.com/roosta/i3wsr/blob/main/assets/example_config.toml).
 
 
 ### Aliases
@@ -287,8 +292,28 @@ file:
 remove_duplicates = true
 ```
 
+### Split at character
+
+By default i3wsr will keep everything until the first `space` character is found,
+then replace the remainder with titles.
+
+If you want to define a different character that is used to split the
+numbered/constant part of the workspace and the dynamic content, you can use
+the option `--split-at [CHAR]`
+
+```toml
+[general]
+split_at = ":"
+```
+
+Here we define colon as the split character, which results in i3wsr only
+keeping the numbered part of a workspace name when renaming.
+
+This can give a cleaner config, but I've kept the old behavior as default.
+
+
 ## Sway
-Check [Pedro Scaff](https://github.com/pedroscaff)'s port [swaywsr](https://github.com/pedroscaff/swaywsr).
+    Check [Pedro Scaff](https://github.com/pedroscaff)'s port [swaywsr](https://github.com/pedroscaff/swaywsr).
 
 ## Testing
 

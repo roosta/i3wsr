@@ -149,7 +149,14 @@ fn get_workspaces(tree: Node) -> Vec<Node> {
         for container in output.nodes {
             for workspace in container.nodes {
                 if let NodeType::Workspace = workspace.nodetype {
-                    out.push(workspace);
+                    match &workspace.name {
+                        Some(name) => {
+                            if !name.eq("__i3_scratch") {
+                                out.push(workspace);
+                            }
+                        }
+                        None => (),
+                    }
                 }
             }
         }

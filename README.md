@@ -6,29 +6,34 @@ i3wsr - i3 workspace renamer
 `i3wsr` is a small program that uses [I3's](https://i3wm.org/) [IPC Interface](https://i3wm.org/docs/ipc.html)
 to change the name of a workspace based on its contents.
 
+# TOC
 
+- [i3wsr - i3 workspace renamer](#i3wsr---i3-workspace-renamer)
+- [TOC](#toc)
+    - [Details](#details)
+    - [Requirements](#requirements)
+    - [Installation](#installation)
+        - [Arch linux](#arch-linux)
+    - [Usage](#usage)
+    - [i3 configuration](#i3-configuration)
+        - [Keeping part of the workspace name](#keeping-part-of-the-workspace-name)
+    - [Configuration / options](#configuration--options)
+        - [Aliases](#aliases)
+        - [WM Property](#wm-property)
+            - [Class](#class)
+            - [Instance](#instance)
+            - [Name](#name)
+        - [Icons](#icons)
+        - [Separator](#separator)
+        - [Default icon](#default-icon)
+        - [No icon names](#no-icon-names)
+        - [No names](#no-names)
+        - [Remove duplicates](#remove-duplicates)
+        - [Split at character](#split-at-character)
+    - [Sway](#sway)
+    - [Testing](#testing)
+    - [Attribution](#attribution)
 
-## Table of content
-
-* [Installation](#installation)
-  * [Arch linux](#arch-linux)
-* [Usage](#usage)
-* [i3 configuration](#i3-configuration)
-* [Configuration / options](#configuration--options)
-  * [Aliases](#aliases)
-  * [WM Property](#wm-property)
-    * [Class](#class)
-    * [Instance](#instance)
-    * [Name](#name)
-  * [Icons](#icons)
-  * [Separator](#separator)
-  * [Default icon](#default-icon)
-  * [No icon names](#no-icon-names)
-  * [No names](#no-names)
-  * [Remove duplicates](#remove-duplicates)
-* [Sway](#sway)
-* [Testing](#testing)
-* [Attribution](#attribution)
 
 ## Details
 

@@ -3,14 +3,21 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
-
 use std::error::Error;
+
+#[derive(Deserialize)]
+#[serde(default)]
+pub struct Aliases {
+    pub class: HashMap<String, String>,
+    pub instance: HashMap<String, String>,
+    pub name: HashMap<String, String>
+}
 
 #[derive(Deserialize)]
 #[serde(default)]
 pub struct Config {
     pub icons: HashMap<String, char>,
-    pub aliases: HashMap<String, String>,
+    pub aliases: Aliases,
     pub general: HashMap<String, String>,
     pub options: HashMap<String, bool>,
 }
@@ -29,11 +36,25 @@ impl Config {
     }
 }
 
+impl Default for Aliases {
+    fn default() -> Self {
+        Aliases {
+            class: HashMap::new(),
+            instance: HashMap::new(),
+            name: HashMap::new()
+        }
+    }
+}
+
 impl Default for Config {
     fn default() -> Self {
         Config {
             icons: HashMap::new(),
-            aliases: HashMap::new(),
+            aliases: Aliases {
+                class: HashMap::new(),
+                instance: HashMap::new(),
+                name: HashMap::new(),
+            },
             general: HashMap::new(),
             options: HashMap::new(),
         }

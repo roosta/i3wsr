@@ -59,12 +59,8 @@ fn get_title(
     conn: &xcb::Connection,
     id: u32,
     config: &Config,
-    res: &Vec<regex::Point>,
+    res: &regex::Compiled
 ) -> Result<String, Box<dyn Error>> {
-    let use_prop = match config.general.get("wm_property") {
-        Some(prop) => prop,
-        None => "class",
-    };
 
     let reply = get_property(&conn, id, x::ATOM_WM_CLASS)?;
     let result: Vec<&str> = reply.split('\0').collect();
@@ -88,25 +84,39 @@ fn get_title(
         }
     };
 
-    // Set target from options
-    let target = match use_prop {
-        "instance" => {
-            if wm_instance.is_empty() {
-                wm_class.to_string()
-            } else {
-                wm_instance.to_string()
-            }
-        }
-        "name" => wm_name,
-        _ => wm_class.to_string(),
-    };
+    // // Set target from options
+    // let target = match use_prop {
+    //     "instance" => {
+    //         if wm_instance.is_empty() {
+    //             wm_class.to_string()
+    //         } else {
+    //             wm_instance.to_string()
+    //         }
+    //     }
+    //     "name" => wm_name,
+    //     _ => wm_class.to_string(),
+    // };
 
     // Check for aliases using pre-compiled regex
     let title = {
-        let mut filtered = res.iter().filter(|(re, _)| re.is_match(&target));
-        match filtered.next() {
+        let mut filtered_classes =
+            res.class.iter().filter(|(re, _)| re.is_match(&wm_class));
+
+        let mut filtered_instances =
+            res.instance.iter().filter(|(re, _)| re.is_match(&wm_instance));
+
+        let mut filtered_names =
+            res.name.iter().filter(|(re, _)| re.is_match(&wm_name));
+
+        match filtered_names.next() {
             Some((_, alias)) => alias,
-            None => &target,
+            None => match filtered_instances.next() {
+                Some((_, alias)) => alias,
+                None => match filtered_classes.next() {
+                    Some((_, alias)) => alias,
+                    None => wm_class
+                }
+            }
         }
     };
 
@@ -186,7 +196,7 @@ fn collect_titles(
     workspace: &Node,
     x_conn: &xcb::Connection,
     config: &Config,
-    res: &Vec<regex::Point>,
+    res: &regex::Compiled,
 ) -> Vec<String> {
     let window_ids = {
         let mut f = get_ids(vec![workspace.floating_nodes.iter().collect()]);
@@ -215,7 +225,7 @@ pub fn update_tree(
     x_conn: &xcb::Connection,
     i3_conn: &mut I3Connection,
     config: &Config,
-    res: &Vec<regex::Point>
+    res: &regex::Compiled
 ) -> Result<(), Box<dyn Error>> {
     let tree = i3_conn.get_tree()?;
     for workspace in get_workspaces(tree) {
@@ -299,7 +309,7 @@ pub fn handle_window_event(
     x_conn: &xcb::Connection,
     i3_conn: &mut I3Connection,
     config: &Config,
-    res: &Vec<regex::Point>
+    res: &regex::Compiled
 ) -> Result<(), Box<dyn Error>> {
     match e.change {
         WindowChange::New | WindowChange::Close | WindowChange::Move | WindowChange::Title => {
@@ -316,7 +326,7 @@ pub fn handle_ws_event(
     x_conn: &xcb::Connection,
     i3_conn: &mut I3Connection,
     config: &Config,
-    res: &Vec<regex::Point>
+    res: &regex::Compiled
 ) -> Result<(), Box<dyn Error>> {
     match e.change {
         WorkspaceChange::Empty | WorkspaceChange::Focus => {

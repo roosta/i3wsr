@@ -294,6 +294,16 @@ pub fn update_tree(
             new.push_str(&titles);
         }
 
+        if titles.is_empty() {
+            match config.general.get("empty_label") {
+                Some(default_label) => {
+                    new.push_str(" ");
+                    new.push_str(default_label);
+                }
+                None => ()
+            }
+        }
+
         // Dispatch to i3
         if old != new {
             let command = format!("rename workspace \"{}\" to \"{}\"", old, new);

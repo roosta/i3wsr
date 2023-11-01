@@ -272,7 +272,14 @@ To use a default icon when no other is defined use:
 [general]
 default_icon = "💀"
 ```
+### Empty label
 
+Set a label for empty workspaces.
+
+```toml
+[general]
+empty_label = "🌕"
+```
 ### No icon names
 To display names only if icon is not available, you can use the
 `--no-icon-names` flag, or enable it in your config file like so:

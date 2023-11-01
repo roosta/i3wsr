@@ -19,6 +19,7 @@ separator = "  "
 default_icon = ""
 wm_property = "class"
 split_at = ":"
+empty_label = "🌕"
 
 [options]
 remove_duplicates = false

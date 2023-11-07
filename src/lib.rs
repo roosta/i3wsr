@@ -84,19 +84,6 @@ fn get_title(
         }
     };
 
-    // // Set target from options
-    // let target = match use_prop {
-    //     "instance" => {
-    //         if wm_instance.is_empty() {
-    //             wm_class.to_string()
-    //         } else {
-    //             wm_instance.to_string()
-    //         }
-    //     }
-    //     "name" => wm_name,
-    //     _ => wm_class.to_string(),
-    // };
-
     // Check for aliases using pre-compiled regex
     let title = {
         let mut filtered_classes =
@@ -270,7 +257,6 @@ pub fn update_tree(
                 } else {
                     ' '
                 }
-
             },
             None => ' ',
         };

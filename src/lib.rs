@@ -272,8 +272,6 @@ pub fn update_tree(
         // if we do split on colon we need to insert a new one, cause it gets split out
         if split_at == ':' && !initial.is_empty() {
             new.push(':');
-        } else {
-
         }
         // Push new window titles to new string
         if !titles.is_empty() {

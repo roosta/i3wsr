@@ -43,16 +43,9 @@ property for each window in a workspace. In action it would look something like 
 ![](https://raw.githubusercontent.com/roosta/i3wsr/main/assets/preview.gif)
 ## Requirements
 
-i3wsr requires [XCB](https://xcb.freedesktop.org/), if you get compilation
-errors mentioning `xcb`, you might need to install `libxcb`. On Ubuntu for
-example you'd install:
-
-```sh
-sudo apt-get install libxcb1-dev
-```
-
-Refer to [#18](https://github.com/roosta/i3wsr/issues/18) for more.
-
+i3wsr requires [i3wm](https://i3wm.org/) and [numbered
+workspaces](https://i3wm.org/docs/userguide.html#_changing_named_workspaces_moving_to_workspaces),
+see [i3-configuration](#i3-configuration)
 
 ## Installation
 
@@ -85,7 +78,7 @@ exec_always --no-startup-id $HOME/.cargo/bin/i3wsr
 exec_always --no-startup-id /usr/bin/i3wsr
 ```
 
-## i3 configuration
+## i3-configuration
 
 This program depends on numbered workspaces, since we're constantly changing the
 workspace name. So your I3 configuration need to reflect this:
@@ -333,8 +326,9 @@ To run tests locally [Vagrant](https://www.vagrantup.com/) is required. Run
 `script/run_tests.sh` to run tests on ubuntu xenial.
 
 ## Attribution
+
 This program would not be possible without
 [i3ipc-rs](https://github.com/tmerr/i3ipc-rs), a rust library for controlling
-i3-wm through its IPC interface and
+i3wm through its IPC interface and
 [rust-xcb](https://github.com/rtbo/rust-xcb), a set of rust bindings and
 wrappers for [XCB](http://xcb.freedesktop.org/).

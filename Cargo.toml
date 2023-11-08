@@ -16,13 +16,14 @@ exclude = ["/script", "/assets/*", "Vagrantfile"]
 travis-ci = { repository = "roosta/i3wsr" }
 
 [dependencies]
-xcb = "1.2.1"
 clap = { version = "4.3.11", features = ["derive"] }
 toml = "0.7.6"
 serde = { version = "1.0.171", features = ["derive"] }
 itertools = "0.11.0"
 regex = "1.9.1"
-encoding = "0.2.33"
 dirs = "5.0.1"
-i3ipc = "0.10.1"
+# log = "0.4"
 
+[dependencies.i3ipc]
+git = 'https://github.com/roosta/i3ipc-rs'
+# path = "../i3ipc-rs"

@@ -1,15 +1,15 @@
 i3wsr - i3 workspace renamer
 ======
-[![Build Status](https://app.travis-ci.com/roosta/i3wsr.svg?branch=main)](https://app.travis-ci.com/roosta/i3wsr)
+
+[![Test Status](https://github.com/roosta/i3wsr/actions/workflows/test.yml/badge.svg?branch=develop)](https://github.com/roosta/i3wsr/actions)
 [![Crates.io](https://img.shields.io/crates/v/i3wsr)](https://crates.io/crates/i3wsr)
 
 `i3wsr` is a small program that uses [I3's](https://i3wm.org/) [IPC Interface](https://i3wm.org/docs/ipc.html)
 to change the name of a workspace based on its contents.
 
-# TOC
+## Table of content
 
-- [i3wsr - i3 workspace renamer](#i3wsr---i3-workspace-renamer)
-- [TOC](#toc)
+- [Table of content](#table-of-content)
     - [Details](#details)
     - [Requirements](#requirements)
     - [Installation](#installation)
@@ -19,13 +19,15 @@ to change the name of a workspace based on its contents.
         - [Keeping part of the workspace name](#keeping-part-of-the-workspace-name)
     - [Configuration / options](#configuration--options)
         - [Aliases](#aliases)
-        - [WM Property](#wm-property)
+        - [Display property](#display-property)
+        - [Aliases based on property](#aliases-based-on-property)
             - [Class](#class)
             - [Instance](#instance)
             - [Name](#name)
         - [Icons](#icons)
         - [Separator](#separator)
         - [Default icon](#default-icon)
+        - [Empty label](#empty-label)
         - [No icon names](#no-icon-names)
         - [No names](#no-names)
         - [Remove duplicates](#remove-duplicates)
@@ -33,7 +35,6 @@ to change the name of a workspace based on its contents.
     - [Sway](#sway)
     - [Testing](#testing)
     - [Attribution](#attribution)
-
 
 ## Details
 
@@ -78,7 +79,7 @@ exec_always --no-startup-id $HOME/.cargo/bin/i3wsr
 exec_always --no-startup-id /usr/bin/i3wsr
 ```
 
-## i3-configuration
+## i3 configuration
 
 This program depends on numbered workspaces, since we're constantly changing the
 workspace name. So your I3 configuration need to reflect this:
@@ -125,8 +126,11 @@ Example config can be found in
 
 ### Aliases
 
-Sometimes a WM property can be overly verbose, so its possible to match a
-class name with an alias:
+
+Sometimes a class, instance or name can be overly verbose, use aliases that
+match to window properties to create simpler names instead of showing the full
+property
+
 
 ```toml
 [aliases.class]
@@ -150,20 +154,32 @@ Alias keys uses regex for matching, so it's possible to get creative:
 Remember to quote anything but `[a-zA-Z]`, and to escape your slashes. Due to
 rust string escapes if you want a literal backslash use two slashes `\\d`.
 
-### WM Property
+### Aliases based on property
 
 i3wsr supports 3 window properties currently:
 
 ```toml
-[aliases.class]
-[aliases.instance]
-[aliases.name]
+[aliases.name]     // 1
+[aliases.instance] // 2
+[aliases.class]    // 3
 ```
-These are checked in decending order, so if i3wsr finds a name alias, it'll use
-that and if not, then check instance, then finally use class
+These are checked in descending order, so if i3wsr finds a name alias, it'll
+use that and if not, then check instance, then finally use class
 
 > Deprecation note: previously `wm_property` defined which prop to check for
 > aliases, but this newer approach will allow for multiple types of aliases
+
+### Display property
+
+Which property to display if no aliases if found:
+
+```toml
+[general]
+display_property = "instance"
+```
+
+Possible options are `class`, `instance`, and `name`, and will default to `class`
+if not present.
 
 #### Class
 
@@ -228,8 +244,9 @@ Firefox = "🌍"
 # Use quote when matching anything other than [a-zA-Z]
 "Org.gnome.Nautilus" = "📘"
 ```
-i3wsr tries to match an icon with an alias first, then falls back to window
-class, so a config like this is valid:
+i3wsr tries to match an icon with an alias first, if none are found it then
+checks your `display_property`, and tries to match an icon with a non aliased
+`display_property`, lastly it will try to match on class.
 
 ```toml
 [aliases.class]

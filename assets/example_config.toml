@@ -24,6 +24,7 @@ separator = "  "
 default_icon = ""
 split_at = ":"
 empty_label = "🌕"
+display_property = "instance" # class, instance, name
 
 [options]
 remove_duplicates = false

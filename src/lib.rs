@@ -23,7 +23,6 @@ fn get_option(config: &Config, key: &str) -> bool {
     };
 }
 
-/// Gets a window title, depends on wm_property config opt
 fn get_title(
     props: &HashMap<WindowProperty, String>,
     config: &Config,

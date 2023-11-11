@@ -32,6 +32,17 @@ fn get_title(
     let wm_class = props.get(&WindowProperty::Class);
     let wm_instance = props.get(&WindowProperty::Instance);
     let wm_name = props.get(&WindowProperty::Title);
+    let display_prop = match config.general.get("display_property") {
+        Some(prop) => {
+            match prop.as_ref() {
+                "class" | "instance" | "name" => prop,
+                _ => "class"
+            }
+        },
+        None => {
+            "class"
+        }
+    };
 
     // Check for aliases using pre-compiled regex
     let title = {
@@ -54,12 +65,18 @@ fn get_title(
         }) {
             alias
         } else {
-            if let Some(class) = wm_class {
-                class
+            // Handle display prop, if no alias is located, then check for existiance and
+            // display_prop to set a fallback title
+            if wm_name.is_some() && display_prop == "name" {
+                wm_name.unwrap()
+            } else if wm_instance.is_some() && display_prop == "instance"  {
+                wm_instance.unwrap()
+            } else if wm_class.is_some() {
+                wm_class.unwrap()
             } else {
                 Err(format!(
-                    "failed to get any class given these window properties {:#?}",
-                    props
+                        "failed to get alias, display_prop {}, or class",
+                        display_prop
                 ))?
             }
         }
@@ -150,7 +167,7 @@ fn collect_titles(workspace: &Node, config: &Config, res: &regex::Compiled) -> V
         let title = match get_title(&props, config, res) {
             Ok(title) => title,
             Err(e) => {
-                eprintln!("get_title error: {}", e);
+                eprintln!("get_title error: \"{}\" for workspace {:#?}", e, workspace);
                 continue;
             }
         };

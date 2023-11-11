@@ -221,7 +221,7 @@ a nice way of doing it let me know.
 
 ### Display property
 
-Which property to display if no aliases if found:
+Which property to display if no aliases is found:
 
 ```toml
 [general]

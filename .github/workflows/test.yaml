@@ -1,0 +1,22 @@
+---
+name: 'test'
+on:
+  push:
+    branches:
+      - refactor/wm_properties
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install test dependencies
+        run: sudo apt-get install -y i3-wm gcc gpick xterm
+
+      - name: Setup test environment
+        run: script/setup.sh
+
+      - name: Run tests
+        run: cargo test

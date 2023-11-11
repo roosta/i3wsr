@@ -47,7 +47,7 @@ struct Args {
 
     /// What character used to split the workspace title string
     #[arg(short = 'a', long)]
-    split_at: Option<String>
+    split_at: Option<String>,
 }
 
 /// Setup program by handling args and populating config
@@ -137,15 +137,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     for event in listener.listen() {
         match event? {
             Event::WindowEvent(e) => {
-                if let Err(error) =
-                    i3wsr::handle_window_event(&e, &mut i3_conn, &config, &res)
-                {
+                if let Err(error) = i3wsr::handle_window_event(&e, &mut i3_conn, &config, &res) {
                     eprintln!("handle_window_event error: {}", error);
                 }
             }
             Event::WorkspaceEvent(e) => {
-                if let Err(error) = i3wsr::handle_ws_event(&e, &mut i3_conn, &config, &res)
-                {
+                if let Err(error) = i3wsr::handle_ws_event(&e, &mut i3_conn, &config, &res) {
                     eprintln!("handle_ws_event error: {}", error);
                 }
             }

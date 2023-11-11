@@ -4,9 +4,9 @@ use std::error::Error;
 
 pub type Point = (Regex, String);
 pub struct Compiled {
-   pub class: Vec<Point>,
-   pub instance: Vec<Point>,
-   pub name: Vec<Point>
+    pub class: Vec<Point>,
+    pub instance: Vec<Point>,
+    pub name: Vec<Point>,
 }
 
 fn compile((k, v): (&String, &String)) -> Result<Point, Box<dyn Error>> {
@@ -17,19 +17,19 @@ fn compile((k, v): (&String, &String)) -> Result<Point, Box<dyn Error>> {
 pub fn parse_config(config: &Config) -> Result<Compiled, Box<dyn Error>> {
     let classes = match config.aliases.class.iter().map(compile).collect() {
         Ok(v) => v,
-        Err(e) => Err(e)?
+        Err(e) => Err(e)?,
     };
     let instances = match config.aliases.instance.iter().map(compile).collect() {
         Ok(v) => v,
-        Err(e) => Err(e)?
+        Err(e) => Err(e)?,
     };
     let names = match config.aliases.name.iter().map(compile).collect() {
         Ok(v) => v,
-        Err(e) => Err(e)?
+        Err(e) => Err(e)?,
     };
     return Ok(Compiled {
         class: classes,
         instance: instances,
-        name: names
-    })
+        name: names,
+    });
 }

@@ -1,16 +1,16 @@
 use serde::Deserialize;
 use std::collections::HashMap;
+use std::error::Error;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
-use std::error::Error;
 
 #[derive(Deserialize)]
 #[serde(default)]
 pub struct Aliases {
     pub class: HashMap<String, String>,
     pub instance: HashMap<String, String>,
-    pub name: HashMap<String, String>
+    pub name: HashMap<String, String>,
 }
 
 #[derive(Deserialize)]
@@ -41,7 +41,7 @@ impl Default for Aliases {
         Aliases {
             class: HashMap::new(),
             instance: HashMap::new(),
-            name: HashMap::new()
+            name: HashMap::new(),
         }
     }
 }

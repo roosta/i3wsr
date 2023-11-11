@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use i3ipc::{
     event::{
         inner::{WindowChange, WorkspaceChange},
@@ -8,13 +7,13 @@ use i3ipc::{
     I3Connection,
 };
 use itertools::Itertools;
+use std::collections::HashMap;
 
 pub mod config;
 pub mod icons;
 pub mod regex;
 use config::Config;
 use std::error::Error;
-
 
 /// Helper fn to get options via config
 fn get_option(config: &Config, key: &str) -> bool {
@@ -28,28 +27,41 @@ fn get_option(config: &Config, key: &str) -> bool {
 fn get_title(
     props: &HashMap<WindowProperty, String>,
     config: &Config,
-    res: &regex::Compiled
+    res: &regex::Compiled,
 ) -> Result<String, Box<dyn Error>> {
-
     let wm_class = props.get(&WindowProperty::Class);
     let wm_instance = props.get(&WindowProperty::Instance);
     let wm_name = props.get(&WindowProperty::Title);
 
     // Check for aliases using pre-compiled regex
     let title = {
-        if let Some((_, alias)) = wm_name.and_then(|name| res.name.iter().filter(|(re, _)| re.is_match(&name)).next()) {
+        if let Some((_, alias)) =
+            wm_name.and_then(|name| res.name.iter().filter(|(re, _)| re.is_match(&name)).next())
+        {
             alias
-        } else if let Some((_, alias)) = wm_instance.and_then(|instance| res.instance.iter().filter(|(re, _)| re.is_match(&instance)).next()) {
+        } else if let Some((_, alias)) = wm_instance.and_then(|instance| {
+            res.instance
+                .iter()
+                .filter(|(re, _)| re.is_match(&instance))
+                .next()
+        }) {
             alias
-        } else if let Some((_, alias)) = wm_class.and_then(|class| res.class.iter().filter(|(re, _)| re.is_match(&class)).next()) {
+        } else if let Some((_, alias)) = wm_class.and_then(|class| {
+            res.class
+                .iter()
+                .filter(|(re, _)| re.is_match(&class))
+                .next()
+        }) {
             alias
         } else {
             if let Some(class) = wm_class {
                 class
             } else {
-                Err(format!("failed to get any class given these window properties {:#?}", props))?
+                Err(format!(
+                    "failed to get any class given these window properties {:#?}",
+                    props
+                ))?
             }
-
         }
     };
 
@@ -108,7 +120,6 @@ fn get_workspaces(tree: Node) -> Vec<Node> {
     out
 }
 
-
 /// get window ids for any depth collection of nodes
 fn get_properties(mut nodes: Vec<Vec<&Node>>) -> Vec<HashMap<WindowProperty, String>> {
     let mut window_props = Vec::new();
@@ -126,12 +137,7 @@ fn get_properties(mut nodes: Vec<Vec<&Node>>) -> Vec<HashMap<WindowProperty, Str
 }
 
 /// Collect a vector of workspace titles
-fn collect_titles(
-    workspace: &Node,
-    config: &Config,
-    res: &regex::Compiled,
-) -> Vec<String> {
-
+fn collect_titles(workspace: &Node, config: &Config, res: &regex::Compiled) -> Vec<String> {
     let window_props = {
         let mut f = get_properties(vec![workspace.floating_nodes.iter().collect()]);
         let mut n = get_properties(vec![workspace.nodes.iter().collect()]);
@@ -158,7 +164,7 @@ fn collect_titles(
 pub fn update_tree(
     i3_conn: &mut I3Connection,
     config: &Config,
-    res: &regex::Compiled
+    res: &regex::Compiled,
 ) -> Result<(), Box<dyn Error>> {
     let tree = i3_conn.get_tree()?;
     for workspace in get_workspaces(tree) {
@@ -194,7 +200,6 @@ pub fn update_tree(
             )
         })?;
 
-
         // Get split_at arg
         let split_at = match config.general.get("split_at") {
             Some(s) => {
@@ -203,14 +208,14 @@ pub fn update_tree(
                 } else {
                     ' '
                 }
-            },
+            }
             None => ' ',
         };
 
         // Get the initial element we want to keep
         let initial = match old.split(split_at).next() {
             Some(i) => i,
-            None => ""
+            None => "",
         };
 
         let mut new: String = String::from(initial);
@@ -230,7 +235,7 @@ pub fn update_tree(
                     new.push_str(" ");
                     new.push_str(default_label);
                 }
-                None => ()
+                None => (),
             }
         }
 
@@ -248,7 +253,7 @@ pub fn handle_window_event(
     e: &WindowEventInfo,
     i3_conn: &mut I3Connection,
     config: &Config,
-    res: &regex::Compiled
+    res: &regex::Compiled,
 ) -> Result<(), Box<dyn Error>> {
     match e.change {
         WindowChange::New | WindowChange::Close | WindowChange::Move | WindowChange::Title => {
@@ -264,7 +269,7 @@ pub fn handle_ws_event(
     e: &WorkspaceEventInfo,
     i3_conn: &mut I3Connection,
     config: &Config,
-    res: &regex::Compiled
+    res: &regex::Compiled,
 ) -> Result<(), Box<dyn Error>> {
     match e.change {
         WorkspaceChange::Empty | WorkspaceChange::Focus => {
@@ -278,9 +283,9 @@ pub fn handle_ws_event(
 #[cfg(test)]
 mod tests {
     use i3ipc::reply::{NodeType, WindowProperty};
-    use std::error::Error;
-    use std::env;
     use std::collections::HashMap;
+    use std::env;
+    use std::error::Error;
 
     #[test]
     fn connection_tree() -> Result<(), Box<dyn Error>> {
@@ -359,7 +364,6 @@ mod tests {
         let workspaces = super::get_workspaces(tree);
         let mut result: Vec<HashMap<WindowProperty, String>> = Vec::new();
         for workspace in workspaces {
-
             let window_props = {
                 let mut f = super::get_properties(vec![workspace.floating_nodes.iter().collect()]);
                 let mut n = super::get_properties(vec![workspace.nodes.iter().collect()]);

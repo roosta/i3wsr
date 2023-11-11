@@ -125,11 +125,11 @@ Example config can be found in
 
 ### Aliases
 
-Sometimes a WM property  can be overly verbose, so its possible to match a
+Sometimes a WM property can be overly verbose, so its possible to match a
 class name with an alias:
 
 ```toml
-[aliases]
+[aliases.class]
 
 # Exact match
 "^Google-chrome-unstable$" = "Chrome-dev"
@@ -155,19 +155,15 @@ rust string escapes if you want a literal backslash use two slashes `\\d`.
 i3wsr supports 3 window properties currently:
 
 ```toml
-[general]
-
-wm_property = "instance"
+[aliases.class]
+[aliases.instance]
+[aliases.name]
 ```
+These are checked in decending order, so if i3wsr finds a name alias, it'll use
+that and if not, then check instance, then finally use class
 
-Possible options are `class`, `instance`, and `name`, and will default to `class`
-if not present.
-
-You can alternatively supply cmd argument:
-
-```sh
-i3wsr --wm-property instance
-```
+> Deprecation note: previously `wm_property` defined which prop to check for
+> aliases, but this newer approach will allow for multiple types of aliases
 
 #### Class
 
@@ -175,28 +171,28 @@ This is the default, and the most succinct.
 
 #### Instance
 
-Use WM\_INSTANCE instead of WM\_CLASS when assigning workspace names, instance
-is usually more specific. i3wsr will try to get the instance but if it isn't
-defined will use class instead.
+Use `WM_INSTANCE` instead of `WM_CLASS` when assigning workspace names,
+instance is usually more specific. i3wsr will try to get the instance but if it
+isn't defined will fall back to class.
 
 A use case for this option could be launching `chromium
 --app="https://web.whatsapp.com"`, and then assign a different icon to whatsapp
-in your config file:
+in your config file, while chrome retains its own alias:
 ```toml
 [icons]
 "WhatsApp" = "🗩"
-```
 
-Aliases will also match on instance:
-```toml
-[aliases]
-"web\\.whatsapp\\.com" = "WhatsApp"
+[aliases.class]
+Google-chrome = "Chrome"
+
+[aliases.instance]
+"web\\.whatsapp\\.com" = "Whatsapp"
 ```
 
 #### Name
 
-Uses WM_NAME instead of WM_CLASS, this option is very verbose and relies on regex
-matching of aliases to be of any use.
+Uses `WM_NAME` instead of  `WM_INSTANCE` and `WM_CLASS`, this option is very
+verbose and relies on regex matching of aliases to be of any use.
 
 A use-case is running some terminal application, and as default i3wsr will only
 display class regardless of whats running in the terminal.
@@ -204,10 +200,7 @@ display class regardless of whats running in the terminal.
 So you could do something like this:
 
 ```toml
-[general]
-wm_property = "name"
-
-[aliases]
+[aliases.name]
 ".*mutt$" = "Mutt"
 ```
 
@@ -239,7 +232,7 @@ i3wsr tries to match an icon with an alias first, then falls back to window
 class, so a config like this is valid:
 
 ```toml
-[aliases]
+[aliases.class]
 "Gimp-\\d\\.\\d\\d" = "Gimp"
 
 [icons]

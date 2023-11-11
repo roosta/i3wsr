@@ -1,15 +1,17 @@
 i3wsr - i3 workspace renamer
 ======
 
-[![Test Status](https://github.com/roosta/i3wsr/actions/workflows/test.yml/badge.svg?branch=develop)](https://github.com/roosta/i3wsr/actions)
+[![Test Status](https://github.com/roosta/i3wsr/actions/workflows/test.yaml/badge.svg?branch=develop)](https://github.com/roosta/i3wsr/actions)
 [![Crates.io](https://img.shields.io/crates/v/i3wsr)](https://crates.io/crates/i3wsr)
+
 
 `i3wsr` is a small program that uses [I3's](https://i3wm.org/) [IPC Interface](https://i3wm.org/docs/ipc.html)
 to change the name of a workspace based on its contents.
 
-## Table of content
+## TOC
 
-- [Table of content](#table-of-content)
+- [i3wsr - i3 workspace renamer](#i3wsr---i3-workspace-renamer)
+- [TOC](#toc)
     - [Details](#details)
     - [Requirements](#requirements)
     - [Installation](#installation)
@@ -19,11 +21,11 @@ to change the name of a workspace based on its contents.
         - [Keeping part of the workspace name](#keeping-part-of-the-workspace-name)
     - [Configuration / options](#configuration--options)
         - [Aliases](#aliases)
-        - [Display property](#display-property)
         - [Aliases based on property](#aliases-based-on-property)
             - [Class](#class)
             - [Instance](#instance)
             - [Name](#name)
+        - [Display property](#display-property)
         - [Icons](#icons)
         - [Separator](#separator)
         - [Default icon](#default-icon)
@@ -169,18 +171,6 @@ use that and if not, then check instance, then finally use class
 > Deprecation note: previously `wm_property` defined which prop to check for
 > aliases, but this newer approach will allow for multiple types of aliases
 
-### Display property
-
-Which property to display if no aliases if found:
-
-```toml
-[general]
-display_property = "instance"
-```
-
-Possible options are `class`, `instance`, and `name`, and will default to `class`
-if not present.
-
 #### Class
 
 This is the default, and the most succinct.
@@ -228,6 +218,18 @@ receives a window or workspace event.
 It should be possible to write a launcher script, that wraps whatever
 command your running with a custom i3 ipc trigger event. If anyone figures out
 a nice way of doing it let me know.
+
+### Display property
+
+Which property to display if no aliases if found:
+
+```toml
+[general]
+display_property = "instance"
+```
+
+Possible options are `class`, `instance`, and `name`, and will default to `class`
+if not present.
 
 ### Icons
 

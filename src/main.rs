@@ -10,6 +10,13 @@ enum Icons {
     Awesome,
 }
 
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+enum Properties {
+    Class,
+    Instance,
+    Name,
+}
+
 /// i3wsr config
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -33,6 +40,10 @@ struct Args {
     /// Remove duplicate entries in workspace
     #[arg(short, long)]
     remove_duplicates: bool,
+
+    /// Which window property to use when no alias is found
+    #[arg(short = 'p', long)]
+    display_property: Option<Properties>,
 
     /// What character used to split the workspace title string
     #[arg(short = 'a', long)]
@@ -95,6 +106,18 @@ fn setup() -> Result<Config, Box<dyn Error>> {
         config.general.insert("split_at".to_string(), split_char);
     }
 
+    // wm property
+    let display_property = match args.display_property {
+        Some(prop) => match prop {
+            Properties::Class => String::from("class"),
+            Properties::Instance => String::from("instance"),
+            Properties::Name => String::from("name"),
+        },
+        None => String::from("class"),
+    };
+    config
+        .general
+        .insert("display_property".to_string(), display_property);
     Ok(config)
 }
 

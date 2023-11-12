@@ -231,6 +231,11 @@ display_property = "instance"
 Possible options are `class`, `instance`, and `name`, and will default to `class`
 if not present.
 
+You can alternatively supply cmd argument:
+
+```sh
+i3wsr --display-property instance
+```
 ### Icons
 
 You can configure icons for your WM property, a very basic preset for

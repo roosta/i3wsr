@@ -32,15 +32,8 @@ fn get_title(
     let wm_instance = props.get(&WindowProperty::Instance);
     let wm_name = props.get(&WindowProperty::Title);
     let display_prop = match config.general.get("display_property") {
-        Some(prop) => {
-            match prop.as_ref() {
-                "class" | "instance" | "name" => prop,
-                _ => "class"
-            }
-        },
-        None => {
-            "class"
-        }
+        Some(prop) => prop,
+        None => "class",
     };
 
     // Check for aliases using pre-compiled regex

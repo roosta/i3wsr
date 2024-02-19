@@ -161,9 +161,9 @@ rust string escapes if you want a literal backslash use two slashes `\\d`.
 i3wsr supports 3 window properties currently:
 
 ```toml
-[aliases.name]     // 1
-[aliases.instance] // 2
-[aliases.class]    // 3
+[aliases.name]     # 1
+[aliases.instance] # 2
+[aliases.class]    # 3
 ```
 These are checked in descending order, so if i3wsr finds a name alias, it'll
 use that and if not, then check instance, then finally use class

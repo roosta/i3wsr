@@ -1,26 +1,29 @@
-use failure::Error;
 use serde::Deserialize;
-use std::collections::HashMap as Map;
+use std::collections::HashMap;
+use std::error::Error;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 
-lazy_static! {
-    pub static ref EMPTY_MAP: Map<String, String> = Map::new();
-    pub static ref EMPTY_OPT_MAP: Map<String, bool> = Map::new();
+#[derive(Deserialize)]
+#[serde(default)]
+pub struct Aliases {
+    pub class: HashMap<String, String>,
+    pub instance: HashMap<String, String>,
+    pub name: HashMap<String, String>,
 }
 
 #[derive(Deserialize)]
 #[serde(default)]
 pub struct Config {
-    pub icons: Map<String, char>,
-    pub aliases: Map<String, String>,
-    pub general: Map<String, String>,
-    pub options: Map<String, bool>,
+    pub icons: HashMap<String, char>,
+    pub aliases: Aliases,
+    pub general: HashMap<String, String>,
+    pub options: HashMap<String, bool>,
 }
 
 impl Config {
-    pub fn new(filename: &Path, icons_override: &str) -> Result<Self, Error> {
+    pub fn new(filename: &Path, icons_override: &str) -> Result<Self, Box<dyn Error>> {
         let file_config = read_toml_config(filename)?;
         Ok(Config {
             icons: file_config
@@ -33,18 +36,32 @@ impl Config {
     }
 }
 
-impl Default for Config {
+impl Default for Aliases {
     fn default() -> Self {
-        Config {
-            icons: super::icons::NONE.clone(),
-            aliases: EMPTY_MAP.clone(),
-            general: EMPTY_MAP.clone(),
-            options: EMPTY_OPT_MAP.clone(),
+        Aliases {
+            class: HashMap::new(),
+            instance: HashMap::new(),
+            name: HashMap::new(),
         }
     }
 }
 
-fn read_toml_config(filename: &Path) -> Result<Config, Error> {
+impl Default for Config {
+    fn default() -> Self {
+        Config {
+            icons: HashMap::new(),
+            aliases: Aliases {
+                class: HashMap::new(),
+                instance: HashMap::new(),
+                name: HashMap::new(),
+            },
+            general: HashMap::new(),
+            options: HashMap::new(),
+        }
+    }
+}
+
+fn read_toml_config(filename: &Path) -> Result<Config, Box<dyn Error>> {
     let mut file = File::open(filename)?;
     let mut buffer = String::new();
     file.read_to_string(&mut buffer)?;

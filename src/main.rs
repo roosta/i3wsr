@@ -1,132 +1,153 @@
-extern crate i3ipc;
-use std::{path::Path};
-
+use clap::{Parser, ValueEnum};
 use dirs::config_dir;
-use failure::ResultExt;
 use i3ipc::{event::Event, I3Connection, I3EventListener, Subscription};
+use i3wsr::config::Config;
+use std::error::Error;
+use std::path::Path;
 
-extern crate xcb;
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+enum Icons {
+    Awesome,
+}
 
-extern crate i3wsr;
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+enum Properties {
+    Class,
+    Instance,
+    Name,
+}
 
-extern crate exitfailure;
-use exitfailure::ExitFailure;
+/// i3wsr config
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// Path to toml config file
+    #[arg(short, long)]
+    config: Option<String>,
 
-#[macro_use]
-extern crate clap;
-use clap::{App, Arg};
+    /// Sets icons to be used
+    #[arg(short, long)]
+    icons: Option<Icons>,
 
-use i3wsr::config::{Config};
+    /// Display only icon (if available) otherwise display name
+    #[arg(short = 'm', long)]
+    no_icon_names: bool,
 
-fn main() -> Result<(), ExitFailure> {
-    let matches = App::new("i3wsr - i3 workspace renamer")
-        .version(crate_version!())
-        .author("Daniel Berg <mail@roosta.sh>")
-        .arg(
-            Arg::with_name("icons")
-                .long("icons")
-                .short("i")
-                .help("Sets icons to be used")
-                .possible_values(&["awesome"])
-                .takes_value(true)
-        )
-        .arg(
-            Arg::with_name("no-icon-names")
-                .long("no-icon-names")
-                .short("m")
-                .help("Display only icon (if available) otherwise display name"),
-        )
-        .arg(
-            Arg::with_name("no-names")
-                .long("no-names")
-                .short("n")
-                .help("Do not display names")
-        )
-        .arg(
-            Arg::with_name("config")
-                .long("config")
-                .short("c")
-                .help("Path to toml config file")
-                .takes_value(true)
-        )
-        .arg(
-            Arg::with_name("remove-duplicates")
-                .long("remove-duplicates")
-                .short("r")
-                .help("Remove duplicate entries in workspace")
-        )
-        .arg(
-            Arg::with_name("wm-property")
-                .long("wm-property")
-                .short("p")
-                .help("Which window property to use when matching alias, icons")
-                .possible_values(&["class", "instance", "name"])
-                .takes_value(true)
-        )
-        .get_matches();
+    /// Do not display names
+    #[arg(short, long)]
+    no_names: bool,
 
-    let icons = matches.value_of("icons").unwrap_or("");
-    let no_icon_names = matches.is_present("no-icon-names");
-    let no_names = matches.is_present("no-names");
-    let remove_duplicates = matches.is_present("remove-duplicates");
-    let wm_property = matches.is_present("wm-property");
-    let mut default_config = config_dir().unwrap();
-    default_config.push("i3wsr/config.toml");
-    let mut config_path_used: Option<&Path> = None;
-    let mut config = match matches.value_of("config") {
-        Some(filename) => {
-            let config_file = Path::new(filename);
-            config_path_used = Some(config_file);
-            Config::new(config_file, icons)
+    /// Remove duplicate entries in workspace
+    #[arg(short, long)]
+    remove_duplicates: bool,
+
+    /// Which window property to use when no alias is found
+    #[arg(short = 'p', long)]
+    display_property: Option<Properties>,
+
+    /// What character used to split the workspace title string
+    #[arg(short = 'a', long)]
+    split_at: Option<String>,
+}
+
+/// Setup program by handling args and populating config
+/// Returns result containing config
+fn setup() -> Result<Config, Box<dyn Error>> {
+    let args = Args::parse();
+
+    // icons
+    // Not really that useful this opt but keeping for posterity
+    let icons = match args.icons {
+        Some(icons) => match icons {
+            Icons::Awesome => "awesome",
         },
+        None => "",
+    };
+
+    // handle config
+    let xdg_config = config_dir().unwrap().join("i3wsr/config.toml");
+    let config_result = match args.config.as_deref() {
+        Some(filename) => {
+            println!("{filename}");
+            Config::new(Path::new(filename), icons)
+        }
         None => {
-            if (&default_config).exists() {
-                config_path_used = Some(&default_config);
-                Config::new(&default_config, icons)
+            if (xdg_config).exists() {
+                Config::new(&xdg_config, icons)
             } else {
-                Ok(Config {icons: i3wsr::icons::get_icons(icons), ..Default::default()})
+                Ok(Config {
+                    icons: i3wsr::icons::get_icons(icons),
+                    ..Default::default()
+                })
             }
         }
-    }.with_context(|_|format!("Could not parse config file:\n {:?}", config_path_used.unwrap()))?;
+    };
 
-    if no_icon_names {
-        config.options.insert("no_icon_names".to_string(), no_icon_names);
-    }
-    if no_names {
-        config.options.insert("no_names".to_string(), no_names);
-    }
-    if remove_duplicates {
-        config.options.insert("remove_duplicates".to_string(), remove_duplicates);
-    }
-    if wm_property {
-        let v = matches.value_of("wm-property").unwrap_or("class");
-        config.general.insert("wm_property".to_string(), v.to_string());
+    let mut config = config_result?;
+
+    // Flags
+    if args.no_icon_names {
+        config
+            .options
+            .insert("no_icon_names".to_string(), args.no_icon_names);
     }
 
+    if args.no_names {
+        config.options.insert("no_names".to_string(), args.no_names);
+    }
+
+    if args.remove_duplicates {
+        config
+            .options
+            .insert("remove_duplicates".to_string(), args.remove_duplicates);
+    }
+
+    if let Some(split_char) = args.split_at {
+        config.general.insert("split_at".to_string(), split_char);
+    }
+
+    // wm property
+    let display_property = match args.display_property {
+        Some(prop) => match prop {
+            Properties::Class => String::from("class"),
+            Properties::Instance => String::from("instance"),
+            Properties::Name => String::from("name"),
+        },
+        None => String::from("class"),
+    };
+    config
+        .general
+        .insert("display_property".to_string(), display_property);
+    Ok(config)
+}
+
+/// Entry main loop: continusly listen to i3 window events and workspace events, or exit on
+/// abnormal error.
+fn main() -> Result<(), Box<dyn Error>> {
+    let config = setup()?;
     let res = i3wsr::regex::parse_config(&config)?;
     let mut listener = I3EventListener::connect()?;
     let subs = [Subscription::Window, Subscription::Workspace];
+
     listener.subscribe(&subs)?;
 
-    let (x_conn, _) = xcb::Connection::connect(None)?;
     let mut i3_conn = I3Connection::connect()?;
-    i3wsr::update_tree(&x_conn, &mut i3_conn, &config, &res)?;
+    i3wsr::update_tree(&mut i3_conn, &config, &res)?;
 
     for event in listener.listen() {
         match event? {
             Event::WindowEvent(e) => {
-                if let Err(error) = i3wsr::handle_window_event(&e, &x_conn, &mut i3_conn, &config, &res) {
+                if let Err(error) = i3wsr::handle_window_event(&e, &mut i3_conn, &config, &res) {
                     eprintln!("handle_window_event error: {}", error);
                 }
             }
             Event::WorkspaceEvent(e) => {
-                if let Err(error) = i3wsr::handle_ws_event(&e, &x_conn, &mut i3_conn, &config, &res) {
+                if let Err(error) = i3wsr::handle_ws_event(&e, &mut i3_conn, &config, &res) {
                     eprintln!("handle_ws_event error: {}", error);
                 }
             }
             _ => {}
         }
     }
-
     Ok(())
 }

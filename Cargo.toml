@@ -10,24 +10,20 @@ readme = "README.md"
 keywords = ["i3-wm", "window-manager", "workspaces", "linux"]
 categories = ["command-line-utilities"]
 license = "MIT"
-exclude = ["TODOs.org*", "/script", "/assets/*", "Vagrantfile"]
+exclude = ["/script", "/assets/*", "Vagrantfile"]
 
 [badges]
 travis-ci = { repository = "roosta/i3wsr" }
 
 [dependencies]
-xcb = "0.9"
-exitfailure = "0.5.1"
-failure = "0.1.8"
-failure_derive = "0.1.8"
-lazy_static = "1.4.0"
-clap = "2.33.1"
-toml = "0.5.6"
-serde = { version = "1.0.111", features = ["derive"] }
-itertools = "0.9.0"
-regex = "1"
-encoding = "0.2"
-dirs = "4.0.0"
+clap = { version = "4.3.11", features = ["derive"] }
+toml = "0.7.6"
+serde = { version = "1.0.171", features = ["derive"] }
+itertools = "0.11.0"
+regex = "1.9.1"
+dirs = "5.0.1"
+# log = "0.4"
 
 [dependencies.i3ipc]
-version = "0.10.1"
+git = 'https://github.com/roosta/i3ipc-rs'
+# path = "../i3ipc-rs"

@@ -10,14 +10,21 @@ Nautilus = "📘"
 # smile emoji
 MyNiceProgram = "😛"
 
-[aliases]
+[aliases.class]
 TelegramDesktop = "Telegram"
 "Org\\.gnome\\.Nautilus" = "Nautilus"
+
+[aliases.instance]
+"open.spotify.com" = "Spotify"
+
+[aliases.name]
 
 [general]
 separator = "  "
 default_icon = ""
-wm_property = "class"
+split_at = ":"
+empty_label = "🌕"
+display_property = "instance" # class, instance, name
 
 [options]
 remove_duplicates = false

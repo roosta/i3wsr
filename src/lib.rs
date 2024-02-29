@@ -230,7 +230,7 @@ pub fn update_tree(
         let mut new: String = String::from(initial);
 
         // if we do split on colon we need to insert a new one, cause it gets split out
-        if split_at == ':' && !initial.is_empty() {
+        if split_at == ':' && !initial.is_empty() && !titles.is_empty() {
             new.push(':');
         }
         // Push new window titles to new string

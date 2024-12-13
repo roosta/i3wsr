@@ -17,7 +17,7 @@ use std::error::Error;
 
 /// Helper fn to get options via config
 fn get_option(config: &Config, key: &str) -> bool {
-    return match config.options.get(key) {
+    return match config.get_option(key) {
         Some(v) => *v,
         None => false,
     };
@@ -31,7 +31,7 @@ fn get_title(
     let wm_class = props.get(&WindowProperty::Class);
     let wm_instance = props.get(&WindowProperty::Instance);
     let wm_name = props.get(&WindowProperty::Title);
-    let display_prop = match config.general.get("display_property") {
+    let display_prop = match config.get_general("display_property") {
         Some(prop) => prop,
         None => "class",
     };
@@ -78,7 +78,7 @@ fn get_title(
     let no_icon_names = get_option(&config, "no_icon_names");
 
     // Format final result
-    Ok(match config.icons.get(title) {
+    Ok(match config.get_icon(title) {
         Some(icon) => {
             if no_icon_names || no_names {
                 format!("{}", icon)
@@ -86,7 +86,7 @@ fn get_title(
                 format!("{} {}", icon, title)
             }
         }
-        None => match config.general.get("default_icon") {
+        None => match config.get_general("default_icon") {
             Some(default_icon) => {
                 if no_icon_names || no_names {
                     format!("{}", default_icon)
@@ -177,7 +177,7 @@ pub fn update_tree(
 ) -> Result<(), Box<dyn Error>> {
     let tree = i3_conn.get_tree()?;
     for workspace in get_workspaces(tree) {
-        let separator = match config.general.get("separator") {
+        let separator = match config.get_general("separator") {
             Some(s) => s,
             None => " | ",
         };
@@ -210,7 +210,7 @@ pub fn update_tree(
         })?;
 
         // Get split_at arg
-        let split_at = match config.general.get("split_at") {
+        let split_at = match config.get_general("split_at") {
             Some(s) => {
                 if !s.is_empty() {
                     s.chars().next().unwrap()
@@ -239,7 +239,7 @@ pub fn update_tree(
         }
 
         if titles.is_empty() {
-            match config.general.get("empty_label") {
+            match config.get_general("empty_label") {
                 Some(default_label) => {
                     new.push_str(" ");
                     new.push_str(default_label);

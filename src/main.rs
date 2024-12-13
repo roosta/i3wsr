@@ -3,8 +3,56 @@ use dirs::config_dir;
 use swayipc::{Connection, Event, EventType, Fallible};
 use i3wsr::config::{Config, ConfigError};
 use std::error::Error;
+use std::fmt;
 use std::io;
 use std::path::Path;
+
+#[derive(Debug)]
+enum AppError {
+    Config(ConfigError),
+    Connection(swayipc::Error),
+    Regex(i3wsr::regex::RegexError),
+    Event(String),
+    IoError(io::Error),
+}
+
+impl fmt::Display for AppError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            AppError::Config(e) => write!(f, "Configuration error: {}", e),
+            AppError::Connection(e) => write!(f, "IPC connection error: {}", e),
+            AppError::Regex(e) => write!(f, "Regex compilation error: {}", e),
+            AppError::Event(e) => write!(f, "Event handling error: {}", e),
+            AppError::IoError(e) => write!(f, "IO error: {}", e),
+        }
+    }
+}
+
+impl Error for AppError {}
+
+impl From<ConfigError> for AppError {
+    fn from(err: ConfigError) -> Self {
+        AppError::Config(err)
+    }
+}
+
+impl From<swayipc::Error> for AppError {
+    fn from(err: swayipc::Error) -> Self {
+        AppError::Connection(err)
+    }
+}
+
+impl From<i3wsr::regex::RegexError> for AppError {
+    fn from(err: i3wsr::regex::RegexError) -> Self {
+        AppError::Regex(err)
+    }
+}
+
+impl From<io::Error> for AppError {
+    fn from(err: io::Error) -> Self {
+        AppError::IoError(err)
+    }
+}
 
 
 /// Window property types for display
@@ -108,7 +156,7 @@ fn apply_args_to_config(config: &mut Config, args: &Args) {
 }
 
 /// Setup program by handling args and populating config
-fn setup() -> Result<Config, Box<dyn Error>> {
+fn setup() -> Result<Config, AppError> {
     let args = Args::parse();
 
     let mut config = load_config(args.config.as_deref())?;
@@ -123,36 +171,51 @@ fn handle_event(
     conn: &mut Connection,
     config: &Config,
     res: &i3wsr::regex::Compiled,
-) {
+) -> Result<(), AppError> {
     match event {
         Ok(Event::Window(e)) => {
-            if let Err(error) = i3wsr::handle_window_event(&e, conn, config, res) {
-                eprintln!("Window event error: {}", error);
-            }
+            i3wsr::handle_window_event(&e, conn, config, res)
+                .map_err(|e| AppError::Event(format!("Window event error: {}", e)))?;
         }
         Ok(Event::Workspace(e)) => {
-            if let Err(error) = i3wsr::handle_ws_event(&e, conn, config, res) {
-                eprintln!("Workspace event error: {}", error);
-            }
+            i3wsr::handle_ws_event(&e, conn, config, res)
+                .map_err(|e| AppError::Event(format!("Workspace event error: {}", e)))?;
         }
         Ok(_) => {}
-        Err(e) => eprintln!("Event error: {}", e),
+        Err(e) => return Err(AppError::Event(format!("IPC event error: {}", e))),
     }
+    Ok(())
 }
 
 /// Entry main loop: continuously listen to sway window events and workspace events
-fn main() -> Result<(), Box<dyn Error>> {
+fn run() -> Result<(), AppError> {
     let config = setup()?;
     let res = i3wsr::regex::parse_config(&config)?;
 
     let mut conn = Connection::new()?;
     let subscriptions = [EventType::Window, EventType::Workspace];
 
-    i3wsr::update_tree(&mut conn, &config, &res)?;
+    i3wsr::update_tree(&mut conn, &config, &res)
+        .map_err(|e| AppError::Event(format!("Initial tree update failed: {}", e)))?;
 
-    for event in Connection::new()?.subscribe(&subscriptions)? {
-        handle_event(event, &mut conn, &config, &res);
+    let event_connection = Connection::new()?;
+    let events = event_connection.subscribe(&subscriptions)?;
+
+    println!("Started successfully. Listening for events...");
+
+    for event in events {
+        if let Err(e) = handle_event(event, &mut conn, &config, &res) {
+            eprintln!("Error handling event: {}", e);
+            // Continue running despite errors
+        }
     }
 
     Ok(())
+}
+
+fn main() {
+    if let Err(e) = run() {
+        eprintln!("Fatal error: {}", e);
+        std::process::exit(1);
+    }
 }

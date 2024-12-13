@@ -1,7 +1,31 @@
 use crate::Config;
 pub use regex::Regex;
 use std::error::Error;
+use std::fmt;
 use std::collections::HashMap;
+
+#[derive(Debug)]
+pub enum RegexError {
+    Compilation(regex::Error),
+    Pattern(String),
+}
+
+impl fmt::Display for RegexError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            RegexError::Compilation(e) => write!(f, "Regex compilation error: {}", e),
+            RegexError::Pattern(e) => write!(f, "{}", e),
+        }
+    }
+}
+
+impl Error for RegexError {}
+
+impl From<regex::Error> for RegexError {
+    fn from(err: regex::Error) -> Self {
+        RegexError::Compilation(err)
+    }
+}
 
 /// A compiled regex pattern and its corresponding replacement string
 pub type Pattern = (Regex, String);
@@ -15,15 +39,17 @@ pub struct Compiled {
 }
 
 /// Compiles a single regex pattern from a key-value pair
-fn compile_pattern((pattern, replacement): (&String, &String)) -> Result<Pattern, Box<dyn Error>> {
+fn compile_pattern((pattern, replacement): (&String, &String)) -> Result<Pattern, RegexError> {
     Ok((
-        Regex::new(pattern).map_err(|e| format!("Invalid regex pattern '{}': {}", pattern, e))?,
+        Regex::new(pattern).map_err(|e| {
+            RegexError::Pattern(format!("Invalid regex pattern '{}': {}", pattern, e))
+        })?,
         replacement.to_owned(),
     ))
 }
 
 /// Compiles a collection of patterns from a HashMap
-fn compile_patterns(patterns: &HashMap<String, String>) -> Result<Vec<Pattern>, Box<dyn Error>> {
+fn compile_patterns(patterns: &HashMap<String, String>) -> Result<Vec<Pattern>, RegexError> {
     patterns
         .iter()
         .map(|(k, v)| compile_pattern((k, v)))
@@ -31,7 +57,7 @@ fn compile_patterns(patterns: &HashMap<String, String>) -> Result<Vec<Pattern>, 
 }
 
 /// Parses the configuration into compiled regex patterns
-pub fn parse_config(config: &Config) -> Result<Compiled, Box<dyn Error>> {
+pub fn parse_config(config: &Config) -> Result<Compiled, RegexError> {
     Ok(Compiled {
         class: compile_patterns(&config.aliases.class)?,
         instance: compile_patterns(&config.aliases.instance)?,

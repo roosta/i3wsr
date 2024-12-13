@@ -1,13 +1,14 @@
-use i3ipc::{
-    event::{
-        inner::{WindowChange, WorkspaceChange},
-        WindowEventInfo, WorkspaceEventInfo,
-    },
-    reply::{Node, NodeType, WindowProperty},
-    I3Connection,
+use swayipc::{
+    Connection,
+    Node,
+    NodeType,
+    WindowChange,
+    WindowEvent,
+    WindowProperties,
+    WorkspaceChange,
+    WorkspaceEvent,
 };
 use itertools::Itertools;
-use std::collections::HashMap;
 
 pub mod config;
 pub mod regex;
@@ -36,21 +37,21 @@ fn format_with_icon(icon: &char, title: &str, no_names: bool, no_icon_names: boo
 }
 
 fn get_title(
-    props: &HashMap<WindowProperty, String>,
+    props: &WindowProperties,
     config: &Config,
     res: &regex::Compiled,
 ) -> Result<String, Box<dyn Error>> {
     let display_prop = config.get_general("display_property").unwrap_or_else(|| "class".to_string());
 
     // Try to find an alias first
-    let title = find_alias(props.get(&WindowProperty::Title), &res.name)
-        .or_else(|| find_alias(props.get(&WindowProperty::Instance), &res.instance))
-        .or_else(|| find_alias(props.get(&WindowProperty::Class), &res.class))
-        // If no alias found, fall back to the configured display property
-        .or_else(|| match display_prop.as_str() {
-            "name" => props.get(&WindowProperty::Title).map(|s| s.to_string()),
-            "instance" => props.get(&WindowProperty::Instance).map(|s| s.to_string()),
-            _ => props.get(&WindowProperty::Class).map(|s| s.to_string()),
+        let title = find_alias(props.title.as_ref(), &res.name)
+    .or_else(|| find_alias(props.instance.as_ref(), &res.instance))
+    .or_else(|| find_alias(props.class.as_ref(), &res.class))
+    // If no alias found, fall back to the configured display property
+    .or_else(|| match display_prop.as_str() {
+        "name" => props.title.clone(),
+        "instance" => props.instance.clone(),
+        _ => props.class.clone(),
         })
         .ok_or_else(|| format!("failed to get alias, display_prop {}, or class", display_prop))?;
 
@@ -75,7 +76,7 @@ fn get_workspaces(tree: Node) -> Vec<Node> {
     for output in tree.nodes {
         for container in output.nodes {
             for workspace in container.nodes {
-                if let NodeType::Workspace = workspace.nodetype {
+                if let NodeType::Workspace = workspace.node_type {
                     match &workspace.name {
                         Some(name) => {
                             if !name.eq("__i3_scratch") {
@@ -93,14 +94,14 @@ fn get_workspaces(tree: Node) -> Vec<Node> {
 }
 
 /// get window ids for any depth collection of nodes
-fn get_properties(mut nodes: Vec<Vec<&Node>>) -> Vec<HashMap<WindowProperty, String>> {
+fn get_properties(mut nodes: Vec<Vec<&Node>>) -> Vec<WindowProperties> {
     let mut window_props = Vec::new();
 
     while let Some(next) = nodes.pop() {
         for n in next {
             nodes.push(n.nodes.iter().collect());
             if let Some(w) = &n.window_properties {
-                window_props.push(w.to_owned());
+                window_props.push(w.clone());
             }
         }
     }
@@ -180,11 +181,11 @@ fn format_workspace_name(
 
 /// Update all workspace names in tree
 pub fn update_tree(
-    i3_conn: &mut I3Connection,
+    conn: &mut Connection,
     config: &Config,
     res: &regex::Compiled,
 ) -> Result<(), Box<dyn Error>> {
-    let tree = i3_conn.get_tree()?;
+    let tree = conn.get_tree()?;
     let separator = config.get_general("separator").unwrap_or_else(|| " | ".to_string());
     let split_at = get_split_char(config);
 
@@ -212,7 +213,7 @@ pub fn update_tree(
         // Only send command if name changed
         if old != &new {
             let command = format!("rename workspace \"{}\" to \"{}\"", old, new);
-            i3_conn.run_command(&command)?;
+            conn.run_command(command)?;
         }
     }
     Ok(())
@@ -220,14 +221,14 @@ pub fn update_tree(
 
 /// handles new and close window events, to set the workspace name based on content
 pub fn handle_window_event(
-    e: &WindowEventInfo,
-    i3_conn: &mut I3Connection,
+    e: &WindowEvent,
+    conn: &mut Connection,
     config: &Config,
     res: &regex::Compiled,
 ) -> Result<(), Box<dyn Error>> {
     match e.change {
         WindowChange::New | WindowChange::Close | WindowChange::Move | WindowChange::Title => {
-            update_tree(i3_conn, config, res)?;
+            update_tree(conn, config, res)?;
         }
         _ => (),
     }
@@ -236,14 +237,14 @@ pub fn handle_window_event(
 
 /// handles ws events,
 pub fn handle_ws_event(
-    e: &WorkspaceEventInfo,
-    i3_conn: &mut I3Connection,
+    e: &WorkspaceEvent,
+    conn: &mut Connection,
     config: &Config,
     res: &regex::Compiled,
 ) -> Result<(), Box<dyn Error>> {
     match e.change {
         WorkspaceChange::Empty | WorkspaceChange::Focus => {
-            update_tree(i3_conn, config, res)?;
+            update_tree(conn, config, res)?;
         }
         _ => (),
     }

@@ -23,10 +23,10 @@ itertools = "0.13"
 regex = "1.11"
 dirs = "5.0"
 thiserror = "1.0"
-# swayipc = "3.0"
+swayipc = "3.0"
 
 # log = "0.4"
 
-[dependencies.i3ipc]
-git = 'https://github.com/roosta/i3ipc-rs'
+# [dependencies.i3ipc]
+# git = 'https://github.com/roosta/i3ipc-rs'
 # path = "../i3ipc-rs"

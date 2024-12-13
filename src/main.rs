@@ -1,6 +1,6 @@
 use clap::{Parser, ValueEnum};
 use dirs::config_dir;
-use i3ipc::{event::Event, MessageError, I3Connection, I3EventListener, Subscription};
+use swayipc::{Connection, Event, EventType, Fallible};
 use i3wsr::config::{Config, ConfigError};
 use std::error::Error;
 use std::io;
@@ -117,21 +117,21 @@ fn setup() -> Result<Config, Box<dyn Error>> {
     Ok(config)
 }
 
-/// Handles i3 events and updates workspace names
+/// Handles sway events and updates workspace names
 fn handle_event(
-    event: Result<Event, MessageError>,
-    i3_conn: &mut I3Connection,
+    event: Fallible<Event>,
+    conn: &mut Connection,
     config: &Config,
     res: &i3wsr::regex::Compiled,
 ) {
     match event {
-        Ok(Event::WindowEvent(e)) => {
-            if let Err(error) = i3wsr::handle_window_event(&e, i3_conn, config, res) {
+        Ok(Event::Window(e)) => {
+            if let Err(error) = i3wsr::handle_window_event(&e, conn, config, res) {
                 eprintln!("Window event error: {}", error);
             }
         }
-        Ok(Event::WorkspaceEvent(e)) => {
-            if let Err(error) = i3wsr::handle_ws_event(&e, i3_conn, config, res) {
+        Ok(Event::Workspace(e)) => {
+            if let Err(error) = i3wsr::handle_ws_event(&e, conn, config, res) {
                 eprintln!("Workspace event error: {}", error);
             }
         }
@@ -140,19 +140,18 @@ fn handle_event(
     }
 }
 
-/// Entry main loop: continuously listen to i3 window events and workspace events
+/// Entry main loop: continuously listen to sway window events and workspace events
 fn main() -> Result<(), Box<dyn Error>> {
     let config = setup()?;
     let res = i3wsr::regex::parse_config(&config)?;
 
-    let mut listener = I3EventListener::connect()?;
-    listener.subscribe(&[Subscription::Window, Subscription::Workspace])?;
+    let mut conn = Connection::new()?;
+    let subscriptions = [EventType::Window, EventType::Workspace];
 
-    let mut i3_conn = I3Connection::connect()?;
-    i3wsr::update_tree(&mut i3_conn, &config, &res)?;
+    i3wsr::update_tree(&mut conn, &config, &res)?;
 
-    for event in listener.listen() {
-        handle_event(event, &mut i3_conn, &config, &res);
+    for event in Connection::new()?.subscribe(&subscriptions)? {
+        handle_event(event, &mut conn, &config, &res);
     }
 
     Ok(())

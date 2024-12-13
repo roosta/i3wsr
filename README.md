@@ -208,12 +208,8 @@ i3wsr --display-property instance
 ```
 ### Icons
 
-You can configure icons for your WM property, a very basic preset for
-font-awesome is configured, to enable it use the option `--icons awesome`
-(requires font-awesome to be installed).
+You can config icons for your WM property, these are defined in your config file.
 
-A more in depth icon configuration can be setup by using a configuration file.
-In there you can define icons for whatever title you'd like.
 ```toml
 [icons]
 Firefox = "🌍"

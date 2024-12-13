@@ -1,15 +1,26 @@
 use clap::{Parser, ValueEnum};
 use dirs::config_dir;
-use i3ipc::{event::Event, I3Connection, I3EventListener, Subscription};
-use i3wsr::config::Config;
+use i3ipc::{event::Event, MessageError, I3Connection, I3EventListener, Subscription};
+use i3wsr::config::{Config, ConfigError};
 use std::error::Error;
+use std::io;
 use std::path::Path;
 
+/// Supported icon sets
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 enum Icons {
     Awesome,
 }
 
+impl Icons {
+    fn as_str(&self) -> &'static str {
+        match self {
+            Icons::Awesome => "awesome",
+        }
+    }
+}
+
+/// Window property types for display
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 enum Properties {
     Class,
@@ -17,7 +28,17 @@ enum Properties {
     Name,
 }
 
-/// i3wsr config
+impl Properties {
+    fn as_str(&self) -> &'static str {
+        match self {
+            Properties::Class => "class",
+            Properties::Instance => "instance",
+            Properties::Name => "name",
+        }
+    }
+}
+
+/// Command line arguments
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
@@ -50,29 +71,22 @@ struct Args {
     split_at: Option<String>,
 }
 
-/// Setup program by handling args and populating config
-/// Returns result containing config
-fn setup() -> Result<Config, Box<dyn Error>> {
-    let args = Args::parse();
+/// Loads configuration from file or creates default
+fn load_config(config_path: Option<&str>, icons: &str) -> Result<Config, ConfigError> {
+    let xdg_config = config_dir()
+        .ok_or_else(|| ConfigError::IoError(io::Error::new(
+            io::ErrorKind::NotFound,
+            "Could not determine config directory"
+        )))?
+        .join("i3wsr/config.toml");
 
-    // icons
-    // Not really that useful this opt but keeping for posterity
-    let icons = match args.icons {
-        Some(icons) => match icons {
-            Icons::Awesome => "awesome",
-        },
-        None => "",
-    };
-
-    // handle config
-    let xdg_config = config_dir().unwrap().join("i3wsr/config.toml");
-    let config_result = match args.config.as_deref() {
-        Some(filename) => {
-            println!("{filename}");
-            Config::new(Path::new(filename), icons)
+    match config_path {
+        Some(path) => {
+            println!("Loading config from: {path}");
+            Config::new(Path::new(path), icons)
         }
         None => {
-            if (xdg_config).exists() {
+            if xdg_config.exists() {
                 Config::new(&xdg_config, icons)
             } else {
                 Ok(Config {
@@ -81,73 +95,84 @@ fn setup() -> Result<Config, Box<dyn Error>> {
                 })
             }
         }
-    };
+    }
+}
 
-    let mut config = config_result?;
+/// Applies command line arguments to configuration
+fn apply_args_to_config(config: &mut Config, args: &Args) {
+    // Apply boolean options
+    let options = [
+        ("no_icon_names", args.no_icon_names),
+        ("no_names", args.no_names),
+        ("remove_duplicates", args.remove_duplicates),
+    ];
 
-    // Flags
-    if args.no_icon_names {
-        config
-            .options
-            .insert("no_icon_names".to_string(), args.no_icon_names);
+    for (key, value) in options {
+        if value {
+            config.options.insert(key.to_string(), value);
+        }
     }
 
-    if args.no_names {
-        config.options.insert("no_names".to_string(), args.no_names);
+    // Apply general settings
+    if let Some(split_char) = &args.split_at {
+        config.general.insert("split_at".to_string(), split_char.clone());
     }
 
-    if args.remove_duplicates {
-        config
-            .options
-            .insert("remove_duplicates".to_string(), args.remove_duplicates);
-    }
+    let display_property = args
+        .display_property
+        .as_ref()
+        .map_or("class", |p| p.as_str());
+    config.general.insert("display_property".to_string(), display_property.to_string());
+}
 
-    if let Some(split_char) = args.split_at {
-        config.general.insert("split_at".to_string(), split_char);
-    }
+/// Setup program by handling args and populating config
+fn setup() -> Result<Config, Box<dyn Error>> {
+    let args = Args::parse();
+    let icons = args.icons.map_or("", |i| i.as_str());
 
-    // wm property
-    let display_property = match args.display_property {
-        Some(prop) => match prop {
-            Properties::Class => String::from("class"),
-            Properties::Instance => String::from("instance"),
-            Properties::Name => String::from("name"),
-        },
-        None => String::from("class"),
-    };
-    config
-        .general
-        .insert("display_property".to_string(), display_property);
+    let mut config = load_config(args.config.as_deref(), icons)?;
+    apply_args_to_config(&mut config, &args);
+
     Ok(config)
 }
 
-/// Entry main loop: continusly listen to i3 window events and workspace events, or exit on
-/// abnormal error.
+/// Handles i3 events and updates workspace names
+fn handle_event(
+    event: Result<Event, MessageError>,
+    i3_conn: &mut I3Connection,
+    config: &Config,
+    res: &i3wsr::regex::Compiled,
+) {
+    match event {
+        Ok(Event::WindowEvent(e)) => {
+            if let Err(error) = i3wsr::handle_window_event(&e, i3_conn, config, res) {
+                eprintln!("Window event error: {}", error);
+            }
+        }
+        Ok(Event::WorkspaceEvent(e)) => {
+            if let Err(error) = i3wsr::handle_ws_event(&e, i3_conn, config, res) {
+                eprintln!("Workspace event error: {}", error);
+            }
+        }
+        Ok(_) => {}
+        Err(e) => eprintln!("Event error: {}", e),
+    }
+}
+
+/// Entry main loop: continuously listen to i3 window events and workspace events
 fn main() -> Result<(), Box<dyn Error>> {
     let config = setup()?;
     let res = i3wsr::regex::parse_config(&config)?;
-    let mut listener = I3EventListener::connect()?;
-    let subs = [Subscription::Window, Subscription::Workspace];
 
-    listener.subscribe(&subs)?;
+    let mut listener = I3EventListener::connect()?;
+    listener.subscribe(&[Subscription::Window, Subscription::Workspace])?;
 
     let mut i3_conn = I3Connection::connect()?;
     i3wsr::update_tree(&mut i3_conn, &config, &res)?;
 
     for event in listener.listen() {
-        match event? {
-            Event::WindowEvent(e) => {
-                if let Err(error) = i3wsr::handle_window_event(&e, &mut i3_conn, &config, &res) {
-                    eprintln!("handle_window_event error: {}", error);
-                }
-            }
-            Event::WorkspaceEvent(e) => {
-                if let Err(error) = i3wsr::handle_ws_event(&e, &mut i3_conn, &config, &res) {
-                    eprintln!("handle_ws_event error: {}", error);
-                }
-            }
-            _ => {}
-        }
+        handle_event(event, &mut i3_conn, &config, &res);
     }
+
     Ok(())
 }

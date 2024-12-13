@@ -10,7 +10,6 @@ use itertools::Itertools;
 use std::collections::HashMap;
 
 pub mod config;
-pub mod icons;
 pub mod regex;
 
 use config::Config;

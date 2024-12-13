@@ -65,9 +65,8 @@ pub struct Config {
 
 impl Config {
     /// Creates a new Config instance from a file
-    pub fn new(filename: &Path, icons_override: &str) -> Result<Self, ConfigError> {
-        let mut config = Self::from_file(filename)?;
-        config.merge_icons(icons_override);
+    pub fn new(filename: &Path) -> Result<Self, ConfigError> {
+        let config = Self::from_file(filename)?;
         Ok(config)
     }
 
@@ -78,11 +77,6 @@ impl Config {
         file.read_to_string(&mut buffer)?;
         let config: Config = toml::from_str(&buffer)?;
         Ok(config)
-    }
-
-    /// Merges additional icons into the configuration
-    pub fn merge_icons(&mut self, icons_override: &str) {
-        self.icons.extend(crate::icons::get_icons(icons_override));
     }
 
     /// Gets a general configuration value

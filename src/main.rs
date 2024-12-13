@@ -6,19 +6,6 @@ use std::error::Error;
 use std::io;
 use std::path::Path;
 
-/// Supported icon sets
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
-enum Icons {
-    Awesome,
-}
-
-impl Icons {
-    fn as_str(&self) -> &'static str {
-        match self {
-            Icons::Awesome => "awesome",
-        }
-    }
-}
 
 /// Window property types for display
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
@@ -46,10 +33,6 @@ struct Args {
     #[arg(short, long)]
     config: Option<String>,
 
-    /// Sets icons to be used
-    #[arg(short, long)]
-    icons: Option<Icons>,
-
     /// Display only icon (if available) otherwise display name
     #[arg(short = 'm', long)]
     no_icon_names: bool,
@@ -72,7 +55,7 @@ struct Args {
 }
 
 /// Loads configuration from file or creates default
-fn load_config(config_path: Option<&str>, icons: &str) -> Result<Config, ConfigError> {
+fn load_config(config_path: Option<&str>) -> Result<Config, ConfigError> {
     let xdg_config = config_dir()
         .ok_or_else(|| ConfigError::IoError(io::Error::new(
             io::ErrorKind::NotFound,
@@ -83,14 +66,13 @@ fn load_config(config_path: Option<&str>, icons: &str) -> Result<Config, ConfigE
     match config_path {
         Some(path) => {
             println!("Loading config from: {path}");
-            Config::new(Path::new(path), icons)
+            Config::new(Path::new(path))
         }
         None => {
             if xdg_config.exists() {
-                Config::new(&xdg_config, icons)
+                Config::new(&xdg_config)
             } else {
                 Ok(Config {
-                    icons: i3wsr::icons::get_icons(icons),
                     ..Default::default()
                 })
             }
@@ -128,9 +110,8 @@ fn apply_args_to_config(config: &mut Config, args: &Args) {
 /// Setup program by handling args and populating config
 fn setup() -> Result<Config, Box<dyn Error>> {
     let args = Args::parse();
-    let icons = args.icons.map_or("", |i| i.as_str());
 
-    let mut config = load_config(args.config.as_deref(), icons)?;
+    let mut config = load_config(args.config.as_deref())?;
     apply_args_to_config(&mut config, &args);
 
     Ok(config)

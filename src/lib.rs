@@ -133,6 +133,52 @@ fn collect_titles(workspace: &Node, config: &Config, res: &regex::Compiled) -> V
     titles
 }
 
+fn process_titles(titles: Vec<String>, config: &Config) -> Vec<String> {
+    let mut processed = titles;
+
+    if get_option(config, "remove_duplicates") {
+        processed = processed.into_iter().unique().collect();
+    }
+
+    if get_option(config, "no_names") {
+        processed = processed.into_iter()
+            .filter(|s| !s.is_empty())
+            .collect();
+    }
+
+    processed
+}
+
+fn get_split_char(config: &Config) -> char {
+    config.get_general("split_at")
+        .and_then(|s| if s.is_empty() { None } else { s.chars().next() })
+        .unwrap_or(' ')
+}
+
+fn format_workspace_name(
+    initial: &str,
+    titles: &str,
+    split_at: char,
+    config: &Config
+) -> String {
+    let mut new = String::from(initial);
+
+    // Add colon if needed
+    if split_at == ':' && !initial.is_empty() && !titles.is_empty() {
+        new.push(':');
+    }
+
+    // Add titles if present
+    if !titles.is_empty() {
+        new.push_str(titles);
+    } else if let Some(empty_label) = config.get_general("empty_label") {
+        new.push(' ');
+        new.push_str(&empty_label);
+    }
+
+    new
+}
+
 /// Update all workspace names in tree
 pub fn update_tree(
     i3_conn: &mut I3Connection,
@@ -140,77 +186,32 @@ pub fn update_tree(
     res: &regex::Compiled,
 ) -> Result<(), Box<dyn Error>> {
     let tree = i3_conn.get_tree()?;
-    for workspace in get_workspaces(tree) {
-        let separator = config.get_general("separator").unwrap_or_else(|| " | ".to_string());
+    let separator = config.get_general("separator").unwrap_or_else(|| " | ".to_string());
+    let split_at = get_split_char(config);
 
-        let titles = collect_titles(&workspace, config, res);
-        let titles = if get_option(&config, "remove_duplicates") {
-            titles.into_iter().unique().collect()
-        } else {
-            titles
-        };
-        let titles = if get_option(&config, "no_names") {
-            titles
-                .into_iter()
-                .filter(|s| !s.is_empty())
-                .collect::<Vec<String>>()
-        } else {
-            titles
-        };
-        let titles = titles.join(&separator);
-        let titles = if !titles.is_empty() {
-            format!(" {}", titles)
-        } else {
-            titles
-        };
-        let old: String = workspace.name.to_owned().ok_or_else(|| {
-            format!(
-                "Failed to get workspace name for workspace: {:#?}",
-                workspace
-            )
+    for workspace in get_workspaces(tree) {
+        // Get the old workspace name
+        let old = workspace.name.as_ref().ok_or_else(|| {
+            format!("Failed to get workspace name for workspace: {:#?}", workspace)
         })?;
 
-        // Get split_at arg
-        let split_at = match config.get_general("split_at") {
-            Some(s) => {
-                if !s.is_empty() {
-                    s.chars().next().unwrap()
-                } else {
-                    ' '
-                }
-            }
-            None => ' ',
+        // Process titles
+        let titles = collect_titles(&workspace, config, res);
+        let titles = process_titles(titles, config);
+        let titles = if !titles.is_empty() {
+            format!(" {}", titles.join(&separator))
+        } else {
+            String::new()
         };
 
-        // Get the initial element we want to keep
-        let initial = match old.split(split_at).next() {
-            Some(i) => i,
-            None => "",
-        };
+        // Get initial part of workspace name
+        let initial = old.split(split_at).next().unwrap_or("");
 
-        let mut new: String = String::from(initial);
+        // Format new workspace name
+        let new = format_workspace_name(initial, &titles, split_at, config);
 
-        // if we do split on colon we need to insert a new one, cause it gets split out
-        if split_at == ':' && !initial.is_empty() && !titles.is_empty() {
-            new.push(':');
-        }
-        // Push new window titles to new string
-        if !titles.is_empty() {
-            new.push_str(&titles);
-        }
-
-        if titles.is_empty() {
-            match config.get_general("empty_label") {
-                Some(default_label) => {
-                    new.push_str(" ");
-                    new.push_str(&default_label);
-                }
-                None => (),
-            }
-        }
-
-        // Dispatch to i3
-        if old != new {
+        // Only send command if name changed
+        if old != &new {
             let command = format!("rename workspace \"{}\" to \"{}\"", old, new);
             i3_conn.run_command(&command)?;
         }

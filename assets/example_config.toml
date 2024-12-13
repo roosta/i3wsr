@@ -9,6 +9,7 @@ Gpick = ""
 Nautilus = "📘"
 # smile emoji
 MyNiceProgram = "😛"
+default_icon = ""
 
 [aliases.class]
 TelegramDesktop = "Telegram"
@@ -21,7 +22,6 @@ TelegramDesktop = "Telegram"
 
 [general]
 separator = "  "
-default_icon = ""
 split_at = ":"
 empty_label = "🌕"
 display_property = "instance" # class, instance, name

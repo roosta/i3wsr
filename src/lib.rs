@@ -12,15 +12,28 @@ use std::collections::HashMap;
 pub mod config;
 pub mod icons;
 pub mod regex;
+
 use config::Config;
 use std::error::Error;
 
 /// Helper fn to get options via config
 fn get_option(config: &Config, key: &str) -> bool {
-    return match config.get_option(key) {
-        Some(v) => *v,
-        None => false,
-    };
+    config.get_option(key).unwrap_or(false)
+}
+
+fn find_alias(
+    value: Option<&String>,
+    patterns: &[(regex::Regex, String)],
+) -> Option<String> {
+    value.and_then(|val| patterns.iter().find(|(re, _)| re.is_match(val)).map(|(_, alias)| alias.clone()))
+}
+
+fn format_with_icon(icon: &char, title: &str, no_names: bool, no_icon_names: bool) -> String {
+    if no_icon_names || no_names {
+        icon.to_string()
+    } else {
+        format!("{} {}", icon, title)
+    }
 }
 
 fn get_title(
@@ -28,80 +41,31 @@ fn get_title(
     config: &Config,
     res: &regex::Compiled,
 ) -> Result<String, Box<dyn Error>> {
-    let wm_class = props.get(&WindowProperty::Class);
-    let wm_instance = props.get(&WindowProperty::Instance);
-    let wm_name = props.get(&WindowProperty::Title);
-    let display_prop = match config.get_general("display_property") {
-        Some(prop) => prop,
-        None => "class",
-    };
+    let display_prop = config.get_general("display_property").unwrap_or_else(|| "class".to_string());
 
-    // Check for aliases using pre-compiled regex
-    let title = {
-        if let Some((_, alias)) =
-            wm_name.and_then(|name| res.name.iter().filter(|(re, _)| re.is_match(&name)).next())
-        {
-            alias
-        } else if let Some((_, alias)) = wm_instance.and_then(|instance| {
-            res.instance
-                .iter()
-                .filter(|(re, _)| re.is_match(&instance))
-                .next()
-        }) {
-            alias
-        } else if let Some((_, alias)) = wm_class.and_then(|class| {
-            res.class
-                .iter()
-                .filter(|(re, _)| re.is_match(&class))
-                .next()
-        }) {
-            alias
-        } else {
-            // Handle display prop, if no alias is located, then check for existiance and
-            // display_prop to set a fallback title
-            if wm_name.is_some() && display_prop == "name" {
-                wm_name.unwrap()
-            } else if wm_instance.is_some() && display_prop == "instance"  {
-                wm_instance.unwrap()
-            } else if wm_class.is_some() {
-                wm_class.unwrap()
-            } else {
-                Err(format!(
-                        "failed to get alias, display_prop {}, or class",
-                        display_prop
-                ))?
-            }
-        }
-    };
+    // Try to find an alias first
+    let title = find_alias(props.get(&WindowProperty::Title), &res.name)
+        .or_else(|| find_alias(props.get(&WindowProperty::Instance), &res.instance))
+        .or_else(|| find_alias(props.get(&WindowProperty::Class), &res.class))
+        // If no alias found, fall back to the configured display property
+        .or_else(|| match display_prop.as_str() {
+            "name" => props.get(&WindowProperty::Title).map(|s| s.to_string()),
+            "instance" => props.get(&WindowProperty::Instance).map(|s| s.to_string()),
+            _ => props.get(&WindowProperty::Class).map(|s| s.to_string()),
+        })
+        .ok_or_else(|| format!("failed to get alias, display_prop {}, or class", display_prop))?;
 
-    let no_names = get_option(&config, "no_names");
-    let no_icon_names = get_option(&config, "no_icon_names");
+    let no_names = get_option(config, "no_names");
+    let no_icon_names = get_option(config, "no_icon_names");
 
-    // Format final result
-    Ok(match config.get_icon(title) {
-        Some(icon) => {
-            if no_icon_names || no_names {
-                format!("{}", icon)
-            } else {
-                format!("{} {}", icon, title)
-            }
-        }
-        None => match config.get_general("default_icon") {
-            Some(default_icon) => {
-                if no_icon_names || no_names {
-                    format!("{}", default_icon)
-                } else {
-                    format!("{} {}", default_icon, title)
-                }
-            }
-            None => {
-                if no_names {
-                    String::new()
-                } else {
-                    format!("{}", title)
-                }
-            }
-        },
+    Ok(if let Some(icon) = config.get_icon(&title) {
+        format_with_icon(&icon, &title, no_names, no_icon_names)
+    } else if let Some(default_icon) = config.get_icon("default_icon") {
+        format_with_icon(&default_icon, &title, no_names, no_icon_names)
+    } else if no_names {
+        String::new()
+    } else {
+        title
     })
 }
 
@@ -177,10 +141,7 @@ pub fn update_tree(
 ) -> Result<(), Box<dyn Error>> {
     let tree = i3_conn.get_tree()?;
     for workspace in get_workspaces(tree) {
-        let separator = match config.get_general("separator") {
-            Some(s) => s,
-            None => " | ",
-        };
+        let separator = config.get_general("separator").unwrap_or_else(|| " | ".to_string());
 
         let titles = collect_titles(&workspace, config, res);
         let titles = if get_option(&config, "remove_duplicates") {
@@ -196,7 +157,7 @@ pub fn update_tree(
         } else {
             titles
         };
-        let titles = titles.join(separator);
+        let titles = titles.join(&separator);
         let titles = if !titles.is_empty() {
             format!(" {}", titles)
         } else {
@@ -242,7 +203,7 @@ pub fn update_tree(
             match config.get_general("empty_label") {
                 Some(default_label) => {
                     new.push_str(" ");
-                    new.push_str(default_label);
+                    new.push_str(&default_label);
                 }
                 None => (),
             }

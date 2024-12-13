@@ -86,18 +86,20 @@ impl Config {
     }
 
     /// Gets a general configuration value
-    pub fn get_general(&self, key: &str) -> Option<&String> {
-        self.general.get(key)
+    pub fn get_general(&self, key: &str) -> Option<String> {
+        self.general.get(key).map(|s| s.to_string())
     }
 
     /// Gets an option value
-    pub fn get_option(&self, key: &str) -> Option<&bool> {
-        self.options.get(key)
+    pub fn get_option(&self, key: &str) -> Option<bool> {
+        self.options.get(key).copied()
     }
 
     /// Gets an icon by key
-    pub fn get_icon(&self, key: &str) -> Option<&char> {
-        self.icons.get(key)
+    pub fn get_icon(&self, key: &str) -> Option<char> {
+        self.icons.get(key).copied()
+    }
+
     }
 }
 

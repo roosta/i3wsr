@@ -256,6 +256,7 @@ mod tests {
     use std::collections::HashMap;
     use std::env;
     use std::error::Error;
+    use regex::Regex;
 
     #[test]
     fn connection_tree() -> Result<(), Box<dyn Error>> {
@@ -277,6 +278,83 @@ mod tests {
             }
         }
         assert_eq!(name, String::from("1 Gpick | XTerm"));
+        Ok(())
+    }
+
+    #[test]
+    fn test_find_alias() {
+        let patterns = vec![
+            (Regex::new(r"Firefox").unwrap(), "firefox".to_string()),
+            (Regex::new(r"Chrome").unwrap(), "chrome".to_string()),
+        ];
+
+        // Test matching case
+        let binding = "Firefox".to_string();
+        let value = Some(&binding);
+        assert_eq!(super::find_alias(value, &patterns), Some("firefox".to_string()));
+
+        // Test non-matching case
+        let binding = "Safari".to_string();
+        let value = Some(&binding);
+        assert_eq!(super::find_alias(value, &patterns), None);
+
+        // Test None case
+        let value: Option<&String> = None;
+        assert_eq!(super::find_alias(value, &patterns), None);
+    }
+
+    #[test]
+    fn test_format_with_icon() {
+        let icon = '🦊';
+        let title = "Firefox";
+
+        // Test normal case
+        assert_eq!(
+            super::format_with_icon(&icon, title, false, false),
+            "🦊 Firefox"
+        );
+
+        // Test no_names = true
+        assert_eq!(
+            super::format_with_icon(&icon, title, true, false),
+            "🦊"
+        );
+
+        // Test no_icon_names = true
+        assert_eq!(
+            super::format_with_icon(&icon, title, false, true),
+            "🦊"
+        );
+
+        // Test both flags true
+        assert_eq!(
+            super::format_with_icon(&icon, title, true, true),
+            "🦊"
+        );
+    }
+
+    #[test]
+    fn test_get_title_with_different_display_props() -> Result<(), Box<dyn Error>> {
+        let mut props = HashMap::new();
+        props.insert(WindowProperty::Class, "TestClass".to_string());
+        props.insert(WindowProperty::Instance, "TestInstance".to_string());
+        props.insert(WindowProperty::Title, "TestTitle".to_string());
+
+        let mut config = super::Config::default();
+        let res = super::regex::parse_config(&config)?;
+
+        // Test with display_property = "class"
+        config.set_general("display_property".to_string(), "class".to_string());
+        assert!(super::get_title(&props, &config, &res)?.contains("TestClass"));
+
+        // Test with display_property = "instance"
+        config.set_general("display_property".to_string(), "instance".to_string());
+        assert!(super::get_title(&props, &config, &res)?.contains("TestInstance"));
+
+        // Test with display_property = "name"
+        config.set_general("display_property".to_string(), "name".to_string());
+        assert!(super::get_title(&props, &config, &res)?.contains("TestTitle"));
+
         Ok(())
     }
 

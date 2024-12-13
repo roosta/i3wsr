@@ -100,6 +100,9 @@ impl Config {
         self.icons.get(key).copied()
     }
 
+    /// Sets a general configuration value
+    pub fn set_general(&mut self, key: String, value: String) {
+        self.general.insert(key, value);
     }
 }
 

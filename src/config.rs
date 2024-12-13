@@ -104,6 +104,11 @@ impl Config {
     pub fn set_general(&mut self, key: String, value: String) {
         self.general.insert(key, value);
     }
+
+    /// Sets a an option configuration value
+    pub fn set_option(&mut self, key: String, value: bool) {
+        self.options.insert(key, value);
+    }
 }
 
 impl Default for Config {

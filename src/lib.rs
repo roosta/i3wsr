@@ -406,6 +406,86 @@ mod tests {
     }
 
     #[test]
+    fn test_process_titles() {
+        let mut config = super::Config::default();
+
+        // Test with no options enabled
+        let titles = vec!["Firefox".to_string(), "Firefox".to_string(), "Chrome".to_string(), "".to_string()];
+        assert_eq!(
+            super::process_titles(titles.clone(), &config),
+            titles
+        );
+
+        // Test with remove_duplicates
+        config.set_option("remove_duplicates".to_string(), true);
+        let titles = vec!["Firefox".to_string(), "Firefox".to_string(), "Chrome".to_string(), "".to_string()];
+        assert_eq!(
+            super::process_titles(titles.clone(), &config),
+            vec!["Firefox".to_string(), "Chrome".to_string(), "".to_string()]
+        );
+
+        // Test with no_names
+        config.set_option("no_names".to_string(), true);
+        let titles = vec!["Firefox".to_string(), "Chrome".to_string(), "".to_string()];
+        assert_eq!(
+            super::process_titles(titles.clone(), &config),
+            vec!["Firefox".to_string(), "Chrome".to_string()]
+        );
+    }
+
+    #[test]
+    fn test_get_split_char() {
+        let mut config = super::Config::default();
+
+        // Test default (space)
+        assert_eq!(super::get_split_char(&config), ' ');
+
+        // Test with custom split char
+        config.set_general("split_at".to_string(), ":".to_string());
+        assert_eq!(super::get_split_char(&config), ':');
+
+        // Test with empty string
+        config.set_general("split_at".to_string(), "".to_string());
+        assert_eq!(super::get_split_char(&config), ' ');
+    }
+
+    #[test]
+    fn test_format_workspace_name() {
+        let mut config = super::Config::default();
+
+        // Test normal case with space
+        assert_eq!(
+            super::format_workspace_name("1", " Firefox Chrome", ' ', &config),
+            "1 Firefox Chrome"
+        );
+
+        // Test with colon separator
+        assert_eq!(
+            super::format_workspace_name("1", " Firefox Chrome", ':', &config),
+            "1: Firefox Chrome"
+        );
+
+        // Test empty titles with no empty_label
+        assert_eq!(
+            super::format_workspace_name("1", "", ':', &config),
+            "1"
+        );
+
+        // Test empty titles with empty_label
+        config.set_general("empty_label".to_string(), "Empty".to_string());
+        assert_eq!(
+            super::format_workspace_name("1", "", ':', &config),
+            "1 Empty"
+        );
+
+        // Test empty initial
+        assert_eq!(
+            super::format_workspace_name("", " Firefox Chrome", ':', &config),
+            " Firefox Chrome"
+        );
+    }
+
+    #[test]
     fn get_properties() -> Result<(), Box<dyn Error>> {
         env::set_var("DISPLAY", ":99.0");
         let mut i3_conn = super::I3Connection::connect()?;

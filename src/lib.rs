@@ -15,6 +15,55 @@ pub mod regex;
 
 use config::Config;
 use std::error::Error;
+use std::fmt;
+use std::io;
+
+#[derive(Debug)]
+pub enum AppError {
+    Config(config::ConfigError),
+    Connection(swayipc::Error),
+    Regex(regex::RegexError),
+    Event(String),
+    IoError(io::Error),
+}
+
+impl fmt::Display for AppError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            AppError::Config(e) => write!(f, "Configuration error: {}", e),
+            AppError::Connection(e) => write!(f, "IPC connection error: {}", e),
+            AppError::Regex(e) => write!(f, "Regex compilation error: {}", e),
+            AppError::Event(e) => write!(f, "Event handling error: {}", e),
+            AppError::IoError(e) => write!(f, "IO error: {}", e),
+        }
+    }
+}
+
+impl Error for AppError {}
+
+impl From<config::ConfigError> for AppError {
+    fn from(err: config::ConfigError) -> Self {
+        AppError::Config(err)
+    }
+}
+
+impl From<swayipc::Error> for AppError {
+    fn from(err: swayipc::Error) -> Self {
+        AppError::Connection(err)
+    }
+}
+
+impl From<regex::RegexError> for AppError {
+    fn from(err: regex::RegexError) -> Self {
+        AppError::Regex(err)
+    }
+}
+
+impl From<io::Error> for AppError {
+    fn from(err: io::Error) -> Self {
+        AppError::IoError(err)
+    }
+}
 
 /// Helper fn to get options via config
 fn get_option(config: &Config, key: &str) -> bool {
@@ -225,10 +274,11 @@ pub fn handle_window_event(
     conn: &mut Connection,
     config: &Config,
     res: &regex::Compiled,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<(), AppError> {
     match e.change {
         WindowChange::New | WindowChange::Close | WindowChange::Move | WindowChange::Title => {
-            update_tree(conn, config, res)?;
+            update_tree(conn, config, res)
+                .map_err(|e| AppError::Event(format!("Tree update failed: {}", e)))?;
         }
         _ => (),
     }
@@ -241,10 +291,11 @@ pub fn handle_ws_event(
     conn: &mut Connection,
     config: &Config,
     res: &regex::Compiled,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<(), AppError> {
     match e.change {
         WorkspaceChange::Empty | WorkspaceChange::Focus => {
-            update_tree(conn, config, res)?;
+            update_tree(conn, config, res)
+                .map_err(|e| AppError::Event(format!("Tree update failed: {}", e)))?;
         }
         _ => (),
     }

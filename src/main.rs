@@ -2,58 +2,10 @@ use clap::{Parser, ValueEnum};
 use dirs::config_dir;
 use swayipc::{Connection, Event, EventType, Fallible};
 use i3wsr::config::{Config, ConfigError};
-use std::error::Error;
-use std::fmt;
 use std::io;
 use std::path::Path;
 
-#[derive(Debug)]
-enum AppError {
-    Config(ConfigError),
-    Connection(swayipc::Error),
-    Regex(i3wsr::regex::RegexError),
-    Event(String),
-    IoError(io::Error),
-}
-
-impl fmt::Display for AppError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            AppError::Config(e) => write!(f, "Configuration error: {}", e),
-            AppError::Connection(e) => write!(f, "IPC connection error: {}", e),
-            AppError::Regex(e) => write!(f, "Regex compilation error: {}", e),
-            AppError::Event(e) => write!(f, "Event handling error: {}", e),
-            AppError::IoError(e) => write!(f, "IO error: {}", e),
-        }
-    }
-}
-
-impl Error for AppError {}
-
-impl From<ConfigError> for AppError {
-    fn from(err: ConfigError) -> Self {
-        AppError::Config(err)
-    }
-}
-
-impl From<swayipc::Error> for AppError {
-    fn from(err: swayipc::Error) -> Self {
-        AppError::Connection(err)
-    }
-}
-
-impl From<i3wsr::regex::RegexError> for AppError {
-    fn from(err: i3wsr::regex::RegexError) -> Self {
-        AppError::Regex(err)
-    }
-}
-
-impl From<io::Error> for AppError {
-    fn from(err: io::Error) -> Self {
-        AppError::IoError(err)
-    }
-}
-
+use i3wsr::AppError;
 
 /// Window property types for display
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]

@@ -17,6 +17,9 @@ use config::Config;
 use std::error::Error;
 use std::fmt;
 use std::io;
+use std::sync::atomic::{AtomicBool, Ordering};
+
+pub static VERBOSE: AtomicBool = AtomicBool::new(false);
 
 #[derive(Debug)]
 pub enum AppError {
@@ -262,6 +265,9 @@ pub fn update_tree(
         // Only send command if name changed
         if old != &new {
             let command = format!("rename workspace \"{}\" to \"{}\"", old, new);
+            if VERBOSE.load(Ordering::Relaxed) {
+                println!("[COMMAND] {}", command);
+            }
             conn.run_command(command)?;
         }
     }
@@ -275,6 +281,9 @@ pub fn handle_window_event(
     config: &Config,
     res: &regex::Compiled,
 ) -> Result<(), AppError> {
+    if VERBOSE.load(Ordering::Relaxed) {
+        println!("[WINDOW EVENT] Change: {:?}, Container: {:?}", e.change, e.container);
+    }
     match e.change {
         WindowChange::New | WindowChange::Close | WindowChange::Move | WindowChange::Title => {
             update_tree(conn, config, res)
@@ -292,6 +301,10 @@ pub fn handle_ws_event(
     config: &Config,
     res: &regex::Compiled,
 ) -> Result<(), AppError> {
+    if VERBOSE.load(Ordering::Relaxed) {
+        println!("[WORKSPACE EVENT] Change: {:?}, Current: {:?}, Old: {:?}",
+            e.change, e.current, e.old);
+    }
     match e.change {
         WorkspaceChange::Empty | WorkspaceChange::Focus => {
             update_tree(conn, config, res)

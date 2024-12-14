@@ -29,6 +29,9 @@ impl Properties {
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
+    /// Enable verbose logging
+    #[arg(short, long)]
+    verbose: bool,
     /// Path to toml config file
     #[arg(short, long)]
     config: Option<String>,
@@ -110,6 +113,9 @@ fn apply_args_to_config(config: &mut Config, args: &Args) {
 /// Setup program by handling args and populating config
 fn setup() -> Result<Config, AppError> {
     let args = Args::parse();
+
+    // Set verbose mode if requested
+    i3wsr::VERBOSE.store(args.verbose, std::sync::atomic::Ordering::Relaxed);
 
     let mut config = load_config(args.config.as_deref())?;
     apply_args_to_config(&mut config, &args);

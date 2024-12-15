@@ -13,7 +13,7 @@ use itertools::Itertools;
 pub mod config;
 pub mod regex;
 
-use config::Config;
+pub use config::Config;
 use std::error::Error;
 use std::fmt;
 use std::io;
@@ -88,7 +88,7 @@ fn format_with_icon(icon: &char, title: &str, no_names: bool, no_icon_names: boo
     }
 }
 
-fn get_title(
+pub fn get_title(
     props: &WindowProperties,
     config: &Config,
     res: &regex::Compiled,
@@ -122,7 +122,7 @@ fn get_title(
 }
 
 /// Return a collection of workspace nodes, excluding specified workspace names
-fn get_workspaces(tree: Node) -> Vec<Node> {
+pub fn get_workspaces(tree: Node) -> Vec<Node> {
     let excludes = ["__i3_scratch"];
     tree.nodes.into_iter()  // outputs
         .flat_map(|output| output.nodes)  // containers
@@ -137,7 +137,7 @@ fn get_workspaces(tree: Node) -> Vec<Node> {
 }
 
 /// get window ids for any depth collection of nodes
-fn get_properties(mut nodes: Vec<Vec<&Node>>) -> Vec<WindowProperties> {
+pub fn get_properties(mut nodes: Vec<Vec<&Node>>) -> Vec<WindowProperties> {
     let mut window_props = Vec::new();
 
     while let Some(next) = nodes.pop() {
@@ -153,7 +153,7 @@ fn get_properties(mut nodes: Vec<Vec<&Node>>) -> Vec<WindowProperties> {
 }
 
 /// Collect a vector of workspace titles
-fn collect_titles(workspace: &Node, config: &Config, res: &regex::Compiled) -> Vec<String> {
+pub fn collect_titles(workspace: &Node, config: &Config, res: &regex::Compiled) -> Vec<String> {
     let window_props = {
         let mut f = get_properties(vec![workspace.floating_nodes.iter().collect()]);
         let mut n = get_properties(vec![workspace.nodes.iter().collect()]);
@@ -308,34 +308,7 @@ pub fn handle_ws_event(
 
 #[cfg(test)]
 mod tests {
-    use swayipc::{NodeType, WindowProperties};
-    use std::env;
-    use std::error::Error;
     use regex::Regex;
-
-    #[test]
-    fn connection_tree() -> Result<(), Box<dyn Error>> {
-        env::set_var("DISPLAY", ":99.0");
-        let mut conn = swayipc::Connection::new()?;
-        let config = super::Config::default();
-        let res = super::regex::parse_config(&config)?;
-        assert!(super::update_tree(&mut conn, &config, &res).is_ok());
-        let tree = conn.get_tree()?;
-        let mut name: String = String::new();
-        for output in &tree.nodes {
-            for container in &output.nodes {
-                for workspace in &container.nodes {
-                    if let NodeType::Workspace = workspace.node_type {
-                        if let Some(ws_name) = &workspace.name {
-                            name = ws_name.clone();
-                        }
-                    }
-                }
-            }
-        }
-        assert_eq!(name, String::from("1 Gpick | XTerm"));
-        Ok(())
-    }
 
     #[test]
     fn test_find_alias() {
@@ -387,80 +360,6 @@ mod tests {
             super::format_with_icon(&icon, title, true, true),
             "🦊"
         );
-    }
-
-    // TODO Can't seem to instantiate WindowProperties, so I can set custom props
-    // #[test]
-    // fn test_get_title_with_different_display_props() -> Result<(), Box<dyn Error>> {
-    //     let props = WindowProperties {
-    //         class: Some("TestClass".to_string()),
-    //         instance: Some("TestInstance".to_string()),
-    //         title: Some("TestTitle".to_string()),
-    //         window_role: None,
-    //         window_type: None,
-    //         transient_for: None
-    //     };
-    //
-    //     let mut config = super::Config::default();
-    //     let res = super::regex::parse_config(&config)?;
-    //
-    //     // Test with display_property = "class"
-    //     config.set_general("display_property".to_string(), "class".to_string());
-    //     assert!(super::get_title(&props, &config, &res)?.contains("TestClass"));
-    //
-    //     // Test with display_property = "instance"
-    //     config.set_general("display_property".to_string(), "instance".to_string());
-    //     assert!(super::get_title(&props, &config, &res)?.contains("TestInstance"));
-    //
-    //     // Test with display_property = "name"
-    //     config.set_general("display_property".to_string(), "name".to_string());
-    //     assert!(super::get_title(&props, &config, &res)?.contains("TestTitle"));
-    //
-    //     Ok(())
-    // }
-
-    #[test]
-    fn get_title() -> Result<(), Box<dyn Error>> {
-        env::set_var("DISPLAY", ":99.0");
-        let mut conn = swayipc::Connection::new()?;
-
-        let tree = conn.get_tree()?;
-        let mut properties: Vec<WindowProperties> = Vec::new();
-        let workspaces = super::get_workspaces(tree);
-        for workspace in &workspaces {
-            let window_props = {
-                let mut f = super::get_properties(vec![workspace.floating_nodes.iter().collect()]);
-                let mut n = super::get_properties(vec![workspace.nodes.iter().collect()]);
-                n.append(&mut f);
-                n
-            };
-            properties.extend(window_props);
-        }
-        let config = super::Config::default();
-        let res = super::regex::parse_config(&config)?;
-        let result: Result<Vec<String>, _> = properties
-            .iter()
-            .map(|props| super::get_title(props, &config, &res))
-            .collect();
-        assert_eq!(result?, vec!["Gpick", "XTerm"]);
-        Ok(())
-    }
-
-    #[test]
-    fn collect_titles() -> Result<(), Box<dyn Error>> {
-        env::set_var("DISPLAY", ":99.0");
-        let mut conn = swayipc::Connection::new()?;
-        let tree = conn.get_tree()?;
-        let workspaces = super::get_workspaces(tree);
-        let mut result: Vec<Vec<String>> = Vec::new();
-        let config = super::Config::default();
-        let res = super::regex::parse_config(&config)?;
-        for workspace in workspaces {
-            result.push(super::collect_titles(&workspace, &config, &res));
-        }
-        let expected = vec![vec!["Gpick", "XTerm"]];
-        assert_eq!(result, expected);
-        Ok(())
     }
 
     #[test]
@@ -543,24 +442,4 @@ mod tests {
         );
     }
 
-    #[test]
-    fn get_properties() -> Result<(), Box<dyn Error>> {
-        env::set_var("DISPLAY", ":99.0");
-        let mut conn = swayipc::Connection::new()?;
-        let tree = conn.get_tree()?;
-        let workspaces = super::get_workspaces(tree);
-        let mut result: Vec<WindowProperties> = Vec::new();
-        for workspace in workspaces {
-            let window_props = {
-                let mut f = super::get_properties(vec![workspace.floating_nodes.iter().collect()]);
-                let mut n = super::get_properties(vec![workspace.nodes.iter().collect()]);
-                n.append(&mut f);
-                n
-            };
-            result.extend(window_props);
-        }
-        let result: usize = result.iter().filter(|v| v.class.is_some() || v.instance.is_some() || v.title.is_some()).count();
-        assert_eq!(result, 2);
-        Ok(())
-    }
 }

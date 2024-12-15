@@ -1,3 +1,43 @@
+//! # i3wsr - i3/Sway Workspace Renamer
+//!
+//! Internal library functionality for the i3wsr binary. This crate provides the core functionality
+//! for renaming i3/Sway workspaces based on their content.
+//!
+//! ## Note
+//!
+//! This is primarily a binary crate. The public functions and types are mainly exposed for:
+//! - Use by the binary executable
+//! - Testing purposes
+//! - Internal organization
+//!
+//! While you could technically use this as a library, it's not designed or maintained for that purpose.
+//!
+//! ## Internal Architecture
+//!
+//! The crate is organized into several main components:
+//!
+//! - Event handling (`handle_window_event`, `handle_ws_event`)
+//! - Workspace management (`update_tree`, `get_workspaces`)
+//! - Window title processing (`get_title`, `collect_titles`)
+//! - Configuration management (`Config` module)
+//! - Regular expression handling (`regex` module)
+//!
+//! ## Configuration
+//!
+//! Configuration is handled through the `Config` type, which supports:
+//! - Icon mappings for applications
+//! - Display options
+//! - Separator customization
+//! - Regular expression patterns for window matching
+//!
+//! ## Error Handling
+//!
+//! Errors are managed through the `AppError` enum, which encompasses:
+//! - Configuration errors
+//! - IPC connection issues
+//! - Regular expression errors
+//! - Event handling problems
+//! - I/O errors
 use swayipc::{
     Connection,
     Node,
@@ -21,6 +61,25 @@ use std::fmt;
 use std::io;
 use std::sync::atomic::{AtomicBool, Ordering};
 
+/// Global flag to control debug output verbosity.
+///
+/// This flag is atomic to allow safe concurrent access without requiring mutex locks.
+/// It's primarily used by the binary to enable/disable detailed logging of events
+/// and commands.
+///
+/// # Usage
+///
+/// ```rust
+/// use std::sync::atomic::Ordering;
+///
+/// // Enable verbose output
+/// VERBOSE.store(true, Ordering::Relaxed);
+///
+/// // Check if verbose is enabled
+/// if VERBOSE.load(Ordering::Relaxed) {
+///     println!("Verbose output enabled");
+/// }
+/// ```
 pub static VERBOSE: AtomicBool = AtomicBool::new(false);
 
 #[derive(Debug)]
@@ -123,7 +182,14 @@ pub fn get_title(
     })
 }
 
-/// Return a collection of workspace nodes, excluding specified workspace names
+/// Internal function to filter and collect workspace nodes from the window manager tree.
+///
+/// This function is public for testing purposes and binary use only.
+///
+/// # Implementation Note
+///
+/// Filters out special workspaces (like scratchpad) and collects regular workspaces
+/// from the window manager tree structure.
 pub fn get_workspaces(tree: Node) -> Vec<Node> {
     let excludes = ["__i3_scratch"];
     tree.nodes.into_iter()  // outputs
@@ -224,7 +290,24 @@ fn format_workspace_name(
     new
 }
 
-/// Update all workspace names in tree
+/// Internal function to update all workspace names based on their current content.
+///
+/// This function is public for testing purposes and binary use only.
+///
+/// # Implementation Note
+///
+/// Core functionality that:
+/// 1. Retrieves current window manager tree
+/// 2. Processes each workspace's contents
+/// 3. Generates new names based on configuration
+/// 4. Sends rename commands when necessary
+///
+/// # Error Handling
+///
+/// Returns errors for:
+/// - Failed IPC communication
+/// - Invalid workspace names
+/// - Command execution failures
 pub fn update_tree(
     conn: &mut Connection,
     config: &Config,
@@ -267,7 +350,21 @@ pub fn update_tree(
     Ok(())
 }
 
-/// handles new and close window events, to set the workspace name based on content
+/// Internal event handler for window-related events from the window manager.
+///
+/// This function is public for use by the binary executable only.
+///
+/// # Implementation Note
+///
+/// Processes various window events (new, close, move, title changes) and updates
+/// workspace names accordingly. This is a core part of the event loop in the main binary.
+///
+/// # Events Handled
+///
+/// - `WindowChange::New`: New window created
+/// - `WindowChange::Close`: Window closed
+/// - `WindowChange::Move`: Window moved between workspaces
+/// - `WindowChange::Title`: Window title changed
 pub fn handle_window_event(
     e: &WindowEvent,
     conn: &mut Connection,
@@ -287,7 +384,19 @@ pub fn handle_window_event(
     Ok(())
 }
 
-/// handles ws events,
+/// Internal event handler for workspace-related events from the window manager.
+///
+/// This function is public for use by the binary executable only.
+///
+/// # Implementation Note
+///
+/// Processes workspace events (empty, focus changes) and updates workspace names
+/// as needed. This is a core part of the event loop in the main binary.
+///
+/// # Events Handled
+///
+/// - `WorkspaceChange::Empty`: Workspace becomes empty
+/// - `WorkspaceChange::Focus`: Workspace focus changed
 pub fn handle_ws_event(
     e: &WorkspaceEvent,
     conn: &mut Connection,

@@ -193,14 +193,25 @@ pub fn get_title(
 pub fn get_workspaces(tree: Node) -> Vec<Node> {
     let excludes = ["__i3_scratch"];
     tree.nodes.into_iter()  // outputs
-        .flat_map(|output| output.nodes)  // containers
-        .flat_map(|container| container.nodes)  // workspaces
-        .filter(|node| matches!(node.node_type, NodeType::Workspace))
-        .filter(|workspace| {
+        .flat_map(|output| {
+            output.nodes.into_iter().map(move |container| {
+                // Preserve output information for each workspace
+                (output.name.as_ref().map(String::from), container)
+            })
+        })
+        .flat_map(|(output_name, container)| {
+            container.nodes.into_iter().map(move |workspace| {
+                // Attach output name to each workspace
+                (output_name.clone(), workspace)
+            })
+        })
+        .filter(|(_, node)| matches!(node.node_type, NodeType::Workspace))
+        .filter(|(_, workspace)| {
             workspace.name.as_ref()
                 .map(|name| !excludes.contains(&name.as_str()))
                 .unwrap_or(false)
         })
+        .map(|(_, workspace)| workspace)
         .collect()
 }
 
@@ -343,6 +354,9 @@ pub fn update_tree(
             let command = format!("rename workspace \"{}\" to \"{}\"", old, new);
             if VERBOSE.load(Ordering::Relaxed) {
                 println!("{} {}", "[COMMAND]".blue(), command);
+                if let Some(output) = &workspace.output {
+                    println!("{} Workspace on output: {}", "[INFO]".cyan(), output);
+                }
             }
             conn.run_command(command)?;
         }

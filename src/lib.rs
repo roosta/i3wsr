@@ -73,10 +73,10 @@ use std::sync::atomic::{AtomicBool, Ordering};
 /// use std::sync::atomic::Ordering;
 ///
 /// // Enable verbose output
-/// VERBOSE.store(true, Ordering::Relaxed);
+/// i3wsr_core::VERBOSE.store(true, Ordering::Relaxed);
 ///
 /// // Check if verbose is enabled
-/// if VERBOSE.load(Ordering::Relaxed) {
+/// if i3wsr_core::VERBOSE.load(Ordering::Relaxed) {
 ///     println!("Verbose output enabled");
 /// }
 /// ```

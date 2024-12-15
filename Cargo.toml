@@ -2,13 +2,13 @@
 edition = "2021"
 name = "i3wsr"
 version = "3.0.0"
-description = "Change i3-wm workspace names based on its contents"
+description = "A workspace renamer for i3 and Sway window managers that dynamically updates workspace names based on their content. It monitors window events and renames workspaces to show the applications running in them."
 authors = ["Daniel Berg <mail@roosta.sh>"]
 repository =  "https://github.com/roosta/i3wsr"
 documentation =  "https://github.com/roosta/i3wsr"
 readme = "README.md"
 keywords = ["i3-wm", "window-manager", "workspaces", "linux"]
-categories = ["command-line-utilities"]
+categories = ["gui", "window-manager"]
 license = "MIT"
 exclude = ["/script", "/assets/*", "Vagrantfile"]
 

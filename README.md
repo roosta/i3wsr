@@ -4,9 +4,22 @@ i3wsr - i3 workspace renamer
 [![Test Status](https://github.com/roosta/i3wsr/actions/workflows/test.yaml/badge.svg?branch=develop)](https://github.com/roosta/i3wsr/actions)
 [![Crates.io](https://img.shields.io/crates/v/i3wsr)](https://crates.io/crates/i3wsr)
 
+`i3wsr` is a modest program that uses the [IPC Interface](https://i3wm.org/docs/ipc.html)
+of [I3](https://i3wm.org/), or [Sway](https://swaywm.org/) to change the name
+of workspaces based on its contents.
 
-`i3wsr` is a small program that uses [I3's](https://i3wm.org/) [IPC Interface](https://i3wm.org/docs/ipc.html)
-to change the name of a workspace based on its contents.
+## Rebrand and Wayland support
+
+Now that `i3wsr` works with [Sway](https://swaywm.org/) as well as
+[I3](https://i3wm.org/), the name is a bit misleading, and could do with a
+change. Shame to lose the metrics, but it might help further discovery now that
+it supports multiple display servers.
+
+I've not thought of anything yet, but will advertise it here in the README
+before publishing anything under a new name.
+
+Development forward will focus on Sway, but backward compatibility with I3 will
+be maintained.
 
 ## Details
 

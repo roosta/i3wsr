@@ -121,28 +121,19 @@ fn get_title(
     })
 }
 
-/// return a collection of workspace nodes
+/// Return a collection of workspace nodes, excluding specified workspace names
 fn get_workspaces(tree: Node) -> Vec<Node> {
-    let mut out = Vec::new();
-
-    for output in tree.nodes {
-        for container in output.nodes {
-            for workspace in container.nodes {
-                if let NodeType::Workspace = workspace.node_type {
-                    match &workspace.name {
-                        Some(name) => {
-                            if !name.eq("__i3_scratch") {
-                                out.push(workspace);
-                            }
-                        }
-                        None => (),
-                    }
-                }
-            }
-        }
-    }
-
-    out
+    let excludes = ["__i3_scratch"];
+    tree.nodes.into_iter()  // outputs
+        .flat_map(|output| output.nodes)  // containers
+        .flat_map(|container| container.nodes)  // workspaces
+        .filter(|node| matches!(node.node_type, NodeType::Workspace))
+        .filter(|workspace| {
+            workspace.name.as_ref()
+                .map(|name| !excludes.contains(&name.as_str()))
+                .unwrap_or(false)
+        })
+        .collect()
 }
 
 /// get window ids for any depth collection of nodes

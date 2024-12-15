@@ -93,11 +93,11 @@
 use clap::{Parser, ValueEnum};
 use dirs::config_dir;
 use swayipc::{Connection, Event, EventType, Fallible};
-use i3wsr::config::{Config, ConfigError};
+use i3wsr_core::config::{Config, ConfigError};
 use std::io;
 use std::path::Path;
 
-use i3wsr::AppError;
+use i3wsr_core::AppError;
 
 /// Window property types that can be used for workspace naming.
 ///
@@ -298,7 +298,7 @@ fn setup() -> Result<Config, AppError> {
     let args = Args::parse();
 
     // Set verbose mode if requested
-    i3wsr::VERBOSE.store(args.verbose, std::sync::atomic::Ordering::Relaxed);
+    i3wsr_core::VERBOSE.store(args.verbose, std::sync::atomic::Ordering::Relaxed);
 
     let mut config = load_config(args.config.as_deref())?;
     apply_args_to_config(&mut config, &args);
@@ -318,15 +318,15 @@ fn handle_event(
     event: Fallible<Event>,
     conn: &mut Connection,
     config: &Config,
-    res: &i3wsr::regex::Compiled,
+    res: &i3wsr_core::regex::Compiled,
 ) -> Result<(), AppError> {
     match event {
         Ok(Event::Window(e)) => {
-            i3wsr::handle_window_event(&e, conn, config, res)
+            i3wsr_core::handle_window_event(&e, conn, config, res)
                 .map_err(|e| AppError::Event(format!("Window event error: {}", e)))?;
         }
         Ok(Event::Workspace(e)) => {
-            i3wsr::handle_ws_event(&e, conn, config, res)
+            i3wsr_core::handle_ws_event(&e, conn, config, res)
                 .map_err(|e| AppError::Event(format!("Workspace event error: {}", e)))?;
         }
         Ok(_) => {}
@@ -347,12 +347,12 @@ fn handle_event(
 /// interrupted or an unrecoverable error occurs.
 fn run() -> Result<(), AppError> {
     let config = setup()?;
-    let res = i3wsr::regex::parse_config(&config)?;
+    let res = i3wsr_core::regex::parse_config(&config)?;
 
     let mut conn = Connection::new()?;
     let subscriptions = [EventType::Window, EventType::Workspace];
 
-    i3wsr::update_tree(&mut conn, &config, &res)
+    i3wsr_core::update_tree(&mut conn, &config, &res)
         .map_err(|e| AppError::Event(format!("Initial tree update failed: {}", e)))?;
 
     let event_connection = Connection::new()?;

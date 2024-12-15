@@ -12,6 +12,14 @@ categories = ["gui", "window-manager"]
 license = "MIT"
 exclude = ["/script", "/assets/*", "Vagrantfile"]
 
+[lib]
+name = "i3wsr_core"
+path = "src/lib.rs"
+
+[[bin]]
+name = "i3wsr"
+path = "src/main.rs"
+
 [badges]
 travis-ci = { repository = "roosta/i3wsr" }
 

@@ -24,6 +24,7 @@ regex = "1.11"
 dirs = "5.0"
 thiserror = "1.0"
 swayipc = "3.0"
+colored = "2"
 
 # log = "0.4"
 

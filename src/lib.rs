@@ -9,6 +9,8 @@ use swayipc::{
     WorkspaceEvent,
 };
 use itertools::Itertools;
+extern crate colored;
+use colored::Colorize;
 
 pub mod config;
 pub mod regex;
@@ -257,7 +259,7 @@ pub fn update_tree(
         if old != &new {
             let command = format!("rename workspace \"{}\" to \"{}\"", old, new);
             if VERBOSE.load(Ordering::Relaxed) {
-                println!("[COMMAND] {}", command);
+                println!("{} {}", "[COMMAND]".blue(), command);
             }
             conn.run_command(command)?;
         }
@@ -273,7 +275,7 @@ pub fn handle_window_event(
     res: &regex::Compiled,
 ) -> Result<(), AppError> {
     if VERBOSE.load(Ordering::Relaxed) {
-        println!("[WINDOW EVENT] Change: {:?}, Container: {:?}", e.change, e.container);
+        println!("{} Change: {:?}, Container: {:?}", "[WINDOW EVENT]".yellow(), e.change, e.container);
     }
     match e.change {
         WindowChange::New | WindowChange::Close | WindowChange::Move | WindowChange::Title => {
@@ -293,8 +295,8 @@ pub fn handle_ws_event(
     res: &regex::Compiled,
 ) -> Result<(), AppError> {
     if VERBOSE.load(Ordering::Relaxed) {
-        println!("[WORKSPACE EVENT] Change: {:?}, Current: {:?}, Old: {:?}",
-            e.change, e.current, e.old);
+        println!("{} Change: {:?}, Current: {:?}, Old: {:?}",
+           "[WORKSPACE EVENT]".green(), e.change, e.current, e.old);
     }
     match e.change {
         WorkspaceChange::Empty | WorkspaceChange::Focus => {

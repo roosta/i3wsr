@@ -4,9 +4,10 @@ i3wsr - i3 workspace renamer
 [![Test Status](https://github.com/roosta/i3wsr/actions/workflows/test.yaml/badge.svg?branch=develop)](https://github.com/roosta/i3wsr/actions)
 [![Crates.io](https://img.shields.io/crates/v/i3wsr)](https://crates.io/crates/i3wsr)
 
-`i3wsr` is a modest program that uses the [IPC Interface](https://i3wm.org/docs/ipc.html)
-of [I3](https://i3wm.org/), or [Sway](https://swaywm.org/) to change the name
-of workspaces based on its contents.
+A workspace renamer for [i3](https://i3wm.org/) and [Sway](https://swaywm.org/)
+window managers that dynamically updates workspace names based on their
+content. It monitors window events and renames workspaces to show the
+applications running in them.
 
 ## Rebrand and Wayland support
 

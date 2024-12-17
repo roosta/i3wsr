@@ -11,33 +11,6 @@
 //! - Internal organization
 //!
 //! While you could technically use this as a library, it's not designed or maintained for that purpose.
-//!
-//! ## Internal Architecture
-//!
-//! The crate is organized into several main components:
-//!
-//! - Event handling (`handle_window_event`, `handle_ws_event`)
-//! - Workspace management (`update_tree`, `get_workspaces`)
-//! - Window title processing (`get_title`, `collect_titles`)
-//! - Configuration management (`Config` module)
-//! - Regular expression handling (`regex` module)
-//!
-//! ## Configuration
-//!
-//! Configuration is handled through the `Config` type, which supports:
-//! - Icon mappings for applications
-//! - Display options
-//! - Separator customization
-//! - Regular expression patterns for window matching
-//!
-//! ## Error Handling
-//!
-//! Errors are managed through the `AppError` enum, which encompasses:
-//! - Configuration errors
-//! - IPC connection issues
-//! - Regular expression errors
-//! - Event handling problems
-//! - I/O errors
 use swayipc::{
     Connection,
     Node,
@@ -149,6 +122,7 @@ fn format_with_icon(icon: &char, title: &str, no_names: bool, no_icon_names: boo
     }
 }
 
+/// Gets a window title by trying to find an alias for the window, eventually falling back on class
 pub fn get_title(
     props: &WindowProperties,
     config: &Config,
@@ -302,23 +276,9 @@ fn format_workspace_name(
 }
 
 /// Internal function to update all workspace names based on their current content.
-///
 /// This function is public for testing purposes and binary use only.
 ///
-/// # Implementation Note
-///
-/// Core functionality that:
-/// 1. Retrieves current window manager tree
-/// 2. Processes each workspace's contents
-/// 3. Generates new names based on configuration
-/// 4. Sends rename commands when necessary
-///
-/// # Error Handling
-///
-/// Returns errors for:
-/// - Failed IPC communication
-/// - Invalid workspace names
-/// - Command execution failures
+/// Update all workspace names in tree
 pub fn update_tree(
     conn: &mut Connection,
     config: &Config,
@@ -379,13 +339,6 @@ pub fn update_tree(
 ///
 /// Processes various window events (new, close, move, title changes) and updates
 /// workspace names accordingly. This is a core part of the event loop in the main binary.
-///
-/// # Events Handled
-///
-/// - `WindowChange::New`: New window created
-/// - `WindowChange::Close`: Window closed
-/// - `WindowChange::Move`: Window moved between workspaces
-/// - `WindowChange::Title`: Window title changed
 pub fn handle_window_event(
     e: &WindowEvent,
     conn: &mut Connection,
@@ -413,11 +366,6 @@ pub fn handle_window_event(
 ///
 /// Processes workspace events (empty, focus changes) and updates workspace names
 /// as needed. This is a core part of the event loop in the main binary.
-///
-/// # Events Handled
-///
-/// - `WorkspaceChange::Empty`: Workspace becomes empty
-/// - `WorkspaceChange::Focus`: Workspace focus changed
 pub fn handle_ws_event(
     e: &WorkspaceEvent,
     conn: &mut Connection,

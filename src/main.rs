@@ -191,48 +191,6 @@ struct Args {
 }
 
 /// Loads configuration from a TOML file or creates default configuration
-///
-/// # Configuration File Search Order
-///
-/// 1. Path specified via command line argument
-/// 2. $XDG_CONFIG_HOME/i3wsr/config.toml
-/// 3. Default configuration if no file found
-///
-/// # Configuration File Format
-///
-/// The configuration file uses TOML format with these main sections:
-///
-/// ```toml
-/// [icons]
-/// # Map window classes to icons
-/// Firefox = "🌍"
-/// default_icon = "💻"
-///
-/// [aliases.class]
-/// # Map window classes to friendly names
-/// "Google-chrome" = "Chrome"
-///
-/// [aliases.instance]
-/// # Map window instances to friendly names
-/// "web.whatsapp.com" = "WhatsApp"
-///
-/// [aliases.name]
-/// # Map window names using regex
-/// ".*mutt$" = "Mail"
-///
-/// [general]
-/// # General settings
-/// separator = " | "      # Separator between window names
-/// split_at = ":"        # Character to split workspace number
-/// empty_label = "🌕"    # Label for empty workspaces
-/// display_property = "class"  # Default property to display
-///
-/// [options]
-/// # Boolean options
-/// remove_duplicates = false
-/// no_names = false
-/// no_icon_names = false
-/// ```
 fn load_config(config_path: Option<&str>) -> Result<Config, ConfigError> {
     let xdg_config = config_dir()
         .ok_or_else(|| ConfigError::IoError(io::Error::new(
@@ -286,13 +244,6 @@ fn apply_args_to_config(config: &mut Config, args: &Args) {
 }
 
 /// Sets up the program by processing arguments and initializing configuration
-///
-/// This function:
-/// 1. Parses command line arguments
-/// 2. Sets up verbose logging if requested
-/// 3. Loads configuration from file
-/// 4. Applies command line overrides to configuration
-///
 /// Command line arguments take precedence over configuration file settings.
 fn setup() -> Result<Config, AppError> {
     let args = Args::parse();
@@ -307,13 +258,6 @@ fn setup() -> Result<Config, AppError> {
 }
 
 /// Processes window manager events and updates workspace names accordingly
-///
-/// Handles two types of events:
-/// - Window events (new, close, move, title changes)
-/// - Workspace events (focus changes, empty workspace events)
-///
-/// For each event, it updates the relevant workspace names based on
-/// the current configuration and window properties.
 fn handle_event(
     event: Fallible<Event>,
     conn: &mut Connection,
@@ -336,13 +280,6 @@ fn handle_event(
 }
 
 /// Main event loop that monitors window manager events
-///
-/// This function:
-/// 1. Initializes configuration and connections
-/// 2. Subscribes to window and workspace events
-/// 3. Performs initial workspace name updates
-/// 4. Continuously processes events and updates workspace names
-///
 /// The program will continue running and handling events until
 /// interrupted or an unrecoverable error occurs.
 fn run() -> Result<(), AppError> {

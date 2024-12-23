@@ -114,7 +114,7 @@ fn find_alias(
     value.and_then(|val| patterns.iter().find(|(re, _)| re.is_match(val)).map(|(_, alias)| alias.clone()))
 }
 
-fn format_with_icon(icon: &char, title: &str, no_names: bool, no_icon_names: bool) -> String {
+fn format_with_icon(icon: &str, title: &str, no_names: bool, no_icon_names: bool) -> String {
     if no_icon_names || no_names {
         icon.to_string()
     } else {
@@ -147,7 +147,7 @@ pub fn get_title(
 
     Ok(if let Some(icon) = config.get_icon(&title) {
         format_with_icon(&icon, &title, no_names, no_icon_names)
-    } else if let Some(default_icon) = config.get_icon("default_icon") {
+    } else if let Some(default_icon) = config.get_general("default_icon") {
         format_with_icon(&default_icon, &title, no_names, no_icon_names)
     } else if no_names {
         String::new()

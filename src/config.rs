@@ -6,7 +6,7 @@ use std::path::Path;
 use thiserror::Error;
 
 type StringMap = HashMap<String, String>;
-type IconMap = HashMap<String, char>;
+type IconMap = HashMap<String, String>;
 type OptionMap = HashMap<String, bool>;
 
 #[derive(Error, Debug)]
@@ -90,8 +90,8 @@ impl Config {
     }
 
     /// Gets an icon by key
-    pub fn get_icon(&self, key: &str) -> Option<char> {
-        self.icons.get(key).copied()
+    pub fn get_icon(&self, key: &str) -> Option<String> {
+        self.icons.get(key).map(|s| s.to_string())
     }
 
     /// Sets a general configuration value

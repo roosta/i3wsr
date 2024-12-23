@@ -17,7 +17,6 @@ use swayipc::{
     NodeType,
     WindowChange,
     WindowEvent,
-    WindowProperties,
     WorkspaceChange,
     WorkspaceEvent,
 };
@@ -122,26 +121,56 @@ fn format_with_icon(icon: &str, title: &str, no_names: bool, no_icon_names: bool
     }
 }
 
-/// Gets a window title by trying to find an alias for the window, eventually falling back on class
+/// Gets a window title by trying to find an alias for the window, eventually falling back on
+/// class, or app_id, depending on platform.
 pub fn get_title(
-    props: &WindowProperties,
+    node: &Node,
     config: &Config,
     res: &regex::Compiled,
 ) -> Result<String, Box<dyn Error>> {
     let display_prop = config.get_general("display_property").unwrap_or_else(|| "class".to_string());
 
-    // Try to find an alias first
-        let title = find_alias(props.title.as_ref(), &res.name)
-    .or_else(|| find_alias(props.instance.as_ref(), &res.instance))
-    .or_else(|| find_alias(props.class.as_ref(), &res.class))
-    // If no alias found, fall back to the configured display property
-    .or_else(|| match display_prop.as_str() {
-        "name" => props.title.clone(),
-        "instance" => props.instance.clone(),
-        _ => props.class.clone(),
-        })
-        .ok_or_else(|| format!("failed to get alias, display_prop {}, or class", display_prop))?;
+    let title = match &node.window_properties {
+        // Xwayland / Xorg
+        Some(props) => {
+            // First try to find an alias using the window properties
+            let alias = find_alias(props.title.as_ref(), &res.name)
+                .or_else(|| find_alias(props.instance.as_ref(), &res.instance))
+                .or_else(|| find_alias(props.class.as_ref(), &res.class));
 
+            // If no alias found, use the configured display property
+            let title = alias.or_else(|| {
+                let prop_value = match display_prop.as_str() {
+                    "name" => props.title.clone(),
+                    "instance" => props.instance.clone(),
+                    _ => props.class.clone(),
+                };
+                prop_value
+            });
+
+            title.ok_or_else(|| {
+                format!("No title found: tried aliases and display_prop '{}'", display_prop)
+            })?
+        },
+        // Wayland
+        None => {
+            let alias = find_alias(node.name.as_ref(), &res.name)
+                .or_else(|| find_alias(node.app_id.as_ref(), &res.app_id));
+
+            let title = alias.or_else(|| {
+                let prop_value = match display_prop.as_str() {
+                    "name" => node.name.clone(),
+                    _ => node.app_id.clone(),
+                };
+                prop_value
+            });
+            title.ok_or_else(|| {
+                format!("No title found: tried aliases and display_prop '{}'", display_prop)
+            })?
+        }
+    };
+
+    // Try to find an alias first
     let no_names = get_option(config, "no_names");
     let no_icon_names = get_option(config, "no_icon_names");
 
@@ -156,66 +185,52 @@ pub fn get_title(
     })
 }
 
-/// Internal function to filter and collect workspace nodes from the window manager tree.
-///
-/// This function is public for testing purposes and binary use only.
-///
-/// # Implementation Note
-///
 /// Filters out special workspaces (like scratchpad) and collects regular workspaces
 /// from the window manager tree structure.
 pub fn get_workspaces(tree: Node) -> Vec<Node> {
-    let excludes = ["__i3_scratch"];
-    tree.nodes.into_iter()  // outputs
-        .flat_map(|output| {
-            output.nodes.into_iter().map(move |container| {
-                // Preserve output information for each workspace
-                (output.name.as_ref().map(String::from), container)
-            })
-        })
-        .flat_map(|(output_name, container)| {
-            container.nodes.into_iter().map(move |workspace| {
-                // Attach output name to each workspace
-                (output_name.clone(), workspace)
-            })
-        })
-        .filter(|(_, node)| matches!(node.node_type, NodeType::Workspace))
-        .filter(|(_, workspace)| {
-            workspace.name.as_ref()
-                .map(|name| !excludes.contains(&name.as_str()))
-                .unwrap_or(false)
-        })
-        .map(|(_, workspace)| workspace)
-        .collect()
-}
+    let excludes = ["__i3_scratch", "__sway_scratch"];
 
-/// get window ids for any depth collection of nodes
-pub fn get_properties(mut nodes: Vec<Vec<&Node>>) -> Vec<WindowProperties> {
-    let mut window_props = Vec::new();
+    // Helper function to recursively find workspaces in a node
+    fn find_workspaces(node: Node, excludes: &[&str]) -> Vec<Node> {
+        let mut workspaces = Vec::new();
 
-    while let Some(next) = nodes.pop() {
-        for n in next {
-            nodes.push(n.nodes.iter().collect());
-            if let Some(w) = &n.window_properties {
-                window_props.push(w.clone());
+        // If this is a workspace node that's not excluded, add it
+        if matches!(node.node_type, NodeType::Workspace) {
+            if let Some(name) = &node.name {
+                if !excludes.contains(&name.as_str()) {
+                    workspaces.push(node.clone());
+                }
             }
         }
+
+        // Recursively check child nodes
+        for child in node.nodes {
+            workspaces.extend(find_workspaces(child, excludes));
+        }
+
+        // Also check floating nodes
+        for child in node.floating_nodes {
+            workspaces.extend(find_workspaces(child, excludes));
+        }
+
+        workspaces
     }
 
-    window_props
+    // Start the recursive search from the root
+    find_workspaces(tree, &excludes)
 }
 
 /// Collect a vector of workspace titles
 pub fn collect_titles(workspace: &Node, config: &Config, res: &regex::Compiled) -> Vec<String> {
-    let window_props = {
-        let mut f = get_properties(vec![workspace.floating_nodes.iter().collect()]);
-        let mut n = get_properties(vec![workspace.nodes.iter().collect()]);
+    let ws_nodes = {
+        let mut f = workspace.floating_nodes.clone();
+        let mut n = workspace.nodes.clone();
         n.append(&mut f);
         n
     };
 
     let mut titles = Vec::new();
-    for props in window_props {
+    for props in ws_nodes {
         let title = match get_title(&props, config, res) {
             Ok(title) => title,
             Err(e) => {
@@ -229,7 +244,8 @@ pub fn collect_titles(workspace: &Node, config: &Config, res: &regex::Compiled) 
     titles
 }
 
-fn process_titles(titles: Vec<String>, config: &Config) -> Vec<String> {
+/// Applies options on titles, like remove duplicates
+fn apply_options(titles: Vec<String>, config: &Config) -> Vec<String> {
     let mut processed = titles;
 
     if get_option(config, "remove_duplicates") {
@@ -296,7 +312,7 @@ pub fn update_tree(
 
         // Process titles
         let titles = collect_titles(&workspace, config, res);
-        let titles = process_titles(titles, config);
+        let titles = apply_options(titles, config);
         let titles = if !titles.is_empty() {
             format!(" {}", titles.join(&separator))
         } else {

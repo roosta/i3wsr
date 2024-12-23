@@ -24,6 +24,7 @@ pub struct Aliases {
     pub class: StringMap,
     pub instance: StringMap,
     pub name: StringMap,
+    pub app_id: StringMap
 }
 
 impl Aliases {
@@ -35,6 +36,7 @@ impl Aliases {
     /// Gets an alias by category and key
     pub fn get_alias(&self, category: &str, key: &str) -> Option<&String> {
         match category {
+            "app_id" => self.app_id.get(key),
             "class" => self.class.get(key),
             "instance" => self.instance.get(key),
             "name" => self.name.get(key),
@@ -49,6 +51,7 @@ impl Default for Aliases {
             class: StringMap::new(),
             instance: StringMap::new(),
             name: StringMap::new(),
+            app_id: StringMap::new()
         }
     }
 }

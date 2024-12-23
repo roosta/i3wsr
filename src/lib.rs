@@ -347,12 +347,6 @@ pub fn update_tree(
     Ok(())
 }
 
-/// Internal event handler for window-related events from the window manager.
-///
-/// This function is public for use by the binary executable only.
-///
-/// # Implementation Note
-///
 /// Processes various window events (new, close, move, title changes) and updates
 /// workspace names accordingly. This is a core part of the event loop in the main binary.
 pub fn handle_window_event(
@@ -374,12 +368,6 @@ pub fn handle_window_event(
     Ok(())
 }
 
-/// Internal event handler for workspace-related events from the window manager.
-///
-/// This function is public for use by the binary executable only.
-///
-/// # Implementation Note
-///
 /// Processes workspace events (empty, focus changes) and updates workspace names
 /// as needed. This is a core part of the event loop in the main binary.
 pub fn handle_ws_event(

@@ -28,9 +28,10 @@ be maintained.
 
 ## Requirements
 
-i3wsr requires [i3wm](https://i3wm.org/) and [numbered
+i3wsr requires [i3](https://i3wm.org/) or [sway](https://swaywm.org/), and
+[numbered
 workspaces](https://i3wm.org/docs/userguide.html#_changing_named_workspaces_moving_to_workspaces),
-see [i3-configuration](#i3-configuration)
+see [Configuration](#configuration)
 
 ## Installation
 
@@ -63,7 +64,7 @@ exec_always --no-startup-id $HOME/.cargo/bin/i3wsr
 exec_always --no-startup-id /usr/bin/i3wsr
 ```
 
-## i3/sway configuration
+## Configuration
 
 This program depends on numbered workspaces, since we're constantly changing the
 workspace name. So your I3 or Sway configuration need to reflect this:

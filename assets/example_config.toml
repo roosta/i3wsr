@@ -10,13 +10,20 @@ Nautilus = "📘"
 # smile emoji
 MyNiceProgram = "😛"
 
+# i3 / Xwayland
 [aliases.class]
 TelegramDesktop = "Telegram"
 "Org\\.gnome\\.Nautilus" = "Nautilus"
 
+# Sway only
+[aliases.app_id]
+"^firefox$" = "Firefox"
+
+# i3 only
 [aliases.instance]
 "open.spotify.com" = "Spotify"
 
+# Both i3 and sway
 [aliases.name]
 
 [general]

@@ -22,12 +22,10 @@ before publishing anything under a new name.
 Development forward will focus on Sway, but backward compatibility with I3 will
 be maintained.
 
-## Details
+## Preview
 
-The chosen name for a workspace is a composite of the `WM_CLASS` X11 window
-property for each window in a workspace. In action it would look something like this:
+![preview](https://raw.githubusercontent.com/roosta/i3wsr/main/assets/preview.gif)
 
-![](https://raw.githubusercontent.com/roosta/i3wsr/main/assets/preview.gif)
 ## Requirements
 
 i3wsr requires [i3wm](https://i3wm.org/) and [numbered
@@ -65,10 +63,10 @@ exec_always --no-startup-id $HOME/.cargo/bin/i3wsr
 exec_always --no-startup-id /usr/bin/i3wsr
 ```
 
-## i3 configuration
+## i3/sway configuration
 
 This program depends on numbered workspaces, since we're constantly changing the
-workspace name. So your I3 configuration need to reflect this:
+workspace name. So your I3 or Sway configuration need to reflect this:
 
 ```
 bindsym $mod+1 workspace number 1
@@ -119,6 +117,10 @@ property
 
 
 ```toml
+# For Sway
+[aliases.app_id]
+
+# for i3
 [aliases.class]
 
 # Exact match
@@ -142,26 +144,34 @@ rust string escapes if you want a literal backslash use two slashes `\\d`.
 
 ### Aliases based on property
 
-i3wsr supports 3 window properties currently:
+i3wsr supports 4 window properties currently:
 
 ```toml
-[aliases.name]     # 1
-[aliases.instance] # 2
-[aliases.class]    # 3
+[aliases.name]     # 1 i3 / wayland / sway
+[aliases.instance] # 2 i3 / xwayland
+[aliases.class]    # 3 i3 / xwayland
+[aliases.app_id]   # 3 wayland / sway only
 ```
 These are checked in descending order, so if i3wsr finds a name alias, it'll
 use that and if not, then check instance, then finally use class
 
-> Deprecation note: previously `wm_property` defined which prop to check for
-> aliases, but this newer approach will allow for multiple types of aliases
-
 #### Class
 
-This is the default, and the most succinct.
+> Only for Xwayland / i3
+
+This is the default for `i3`, and the most succinct.
+
+#### App id
+
+> Only for Wayland / Sway
+
+This is the default for wayland apps, and the most and works largely like class.
 
 #### Instance
 
-Use `WM_INSTANCE` instead of `WM_CLASS` when assigning workspace names,
+> Only for Xwayland / i3
+
+Use `instance` instead of `class` when assigning workspace names,
 instance is usually more specific. i3wsr will try to get the instance but if it
 isn't defined will fall back to class.
 
@@ -169,6 +179,7 @@ A use case for this option could be launching `chromium
 --app="https://web.whatsapp.com"`, and then assign a different icon to whatsapp
 in your config file, while chrome retains its own alias:
 ```toml
+
 [icons]
 "WhatsApp" = "🗩"
 
@@ -181,7 +192,7 @@ Google-chrome = "Chrome"
 
 #### Name
 
-Uses `WM_NAME` instead of  `WM_INSTANCE` and `WM_CLASS`, this option is very
+Uses `name` instead of `instance` and `class|app_id`, this option is very
 verbose and relies on regex matching of aliases to be of any use.
 
 A use-case is running some terminal application, and as default i3wsr will only
@@ -194,15 +205,6 @@ So you could do something like this:
 ".*mutt$" = "Mutt"
 ```
 
-You could display whatever the terminal is running, but this comes with one
-caveat: i3 has no way of knowing what happens in a terminal and starting say
-mutt will not trigger any IPC events. The alias will take effect whenever i3
-receives a window or workspace event.
-
-It should be possible to write a launcher script, that wraps whatever
-command your running with a custom i3 ipc trigger event. If anyone figures out
-a nice way of doing it let me know.
-
 ### Display property
 
 Which property to display if no aliases is found:
@@ -212,13 +214,12 @@ Which property to display if no aliases is found:
 display_property = "instance"
 ```
 
-Possible options are `class`, `instance`, and `name`, and will default to `class`
-if not present.
+Possible options are `class` `app_id`, `instance`, and `name`, and will default
+to `class` or `app_id` depending on display server if not present.
 
 You can alternatively supply cmd argument:
-
 ```sh
-i3wsr --display-property instance
+i3wsr --display-property name
 ```
 ### Icons
 
@@ -313,20 +314,7 @@ keeping the numbered part of a workspace name when renaming.
 
 This can give a cleaner config, but I've kept the old behavior as default.
 
-
-## Sway
-
-Check [Pedro Scaff](https://github.com/pedroscaff)'s port [swaywsr](https://github.com/pedroscaff/swaywsr).
-
 ## Testing
 
 To run tests locally [Vagrant](https://www.vagrantup.com/) is required. Run
 `script/run_tests.sh` to run tests on ubuntu xenial.
-
-## Attribution
-
-This program would not be possible without
-[i3ipc-rs](https://github.com/tmerr/i3ipc-rs), a rust library for controlling
-i3wm through its IPC interface and
-[rust-xcb](https://github.com/rtbo/rust-xcb), a set of rust bindings and
-wrappers for [XCB](http://xcb.freedesktop.org/).

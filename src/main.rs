@@ -36,6 +36,9 @@
 //! Firefox = "🌍"
 //! default_icon = "💻"
 //!
+//! [aliases.app_id]
+//! "^firefox$" = "Firefox"
+//!
 //! [aliases.class]
 //! # Map window classes to friendly names
 //! "Google-chrome" = "Chrome"

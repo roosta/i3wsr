@@ -92,7 +92,7 @@
 
 use clap::{Parser, ValueEnum};
 use dirs::config_dir;
-use swayipc::{Connection, Event, EventType, Fallible};
+use swayipc::{Connection, Event, EventType, Fallible, WorkspaceChange};
 use i3wsr_core::config::{Config, ConfigError};
 use std::io;
 use std::path::Path;
@@ -270,6 +270,9 @@ fn handle_event(
                 .map_err(|e| AppError::Event(format!("Window event error: {}", e)))?;
         }
         Ok(Event::Workspace(e)) => {
+            if e.change == WorkspaceChange::Reload {
+                return Err(AppError::Abort(format!("Config reloaded")));
+            }
             i3wsr_core::handle_ws_event(&e, conn, config, res)
                 .map_err(|e| AppError::Event(format!("Workspace event error: {}", e)))?;
         }
@@ -299,8 +302,15 @@ fn run() -> Result<(), AppError> {
 
     for event in events {
         if let Err(e) = handle_event(event, &mut conn, &config, &res) {
-            eprintln!("Error handling event: {}", e);
-            // Continue running despite errors
+            match &e {
+                // Exit program on abort, this is because when config gets reloaded, we want the
+                // old process to exit, letting sway start a new one.
+                AppError::Abort(_) => {
+                    return Err(e);
+                }
+                // Continue running despite errors
+                _ => eprintln!("Error handling event: {}", e),
+            }
         }
     }
 

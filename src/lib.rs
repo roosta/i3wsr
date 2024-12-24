@@ -61,6 +61,7 @@ pub enum AppError {
     Regex(regex::RegexError),
     Event(String),
     IoError(io::Error),
+    Abort(String),
 }
 
 impl fmt::Display for AppError {
@@ -71,6 +72,7 @@ impl fmt::Display for AppError {
             AppError::Regex(e) => write!(f, "Regex compilation error: {}", e),
             AppError::Event(e) => write!(f, "Event handling error: {}", e),
             AppError::IoError(e) => write!(f, "IO error: {}", e),
+            AppError::Abort(e) => write!(f, "Abort signal, stopping program: {}", e),
         }
     }
 }

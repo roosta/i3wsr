@@ -329,7 +329,6 @@ pub fn update_tree(
 
         // Only send command if name changed
         if old != &new {
-            // Use focused workspace criteria to ensure we're targeting the correct workspace
             let command = format!("rename workspace \"{}\" to \"{}\"", old, new);
             if VERBOSE.load(Ordering::Relaxed) {
                 println!("{} {}", "[COMMAND]".blue(), command);
@@ -339,8 +338,8 @@ pub fn update_tree(
             }
 
             // First focus the workspace to ensure we're renaming the correct one
-            let focus_cmd = format!("workspace \"{}\"", old);
-            conn.run_command(&focus_cmd)?;
+            // let focus_cmd = format!("workspace \"{}\"", old);
+            // conn.run_command(&focus_cmd)?;
 
             // Then rename it
             conn.run_command(&command)?;

@@ -1,6 +1,6 @@
 use std::env;
 use std::error::Error;
-use swayipc::{Connection, WindowProperties};
+use swayipc::{Connection, Node};
 use i3wsr_core::{Config, update_tree};
 
 #[test]
@@ -29,22 +29,24 @@ fn get_title() -> Result<(), Box<dyn Error>> {
     let mut conn = swayipc::Connection::new()?;
 
     let tree = conn.get_tree()?;
-    let mut properties: Vec<WindowProperties> = Vec::new();
+    let mut ws_nodes: Vec<Node> = Vec::new();
     let workspaces = i3wsr_core::get_workspaces(tree);
     for workspace in &workspaces {
-        let window_props = {
-            let mut f = i3wsr_core::get_properties(vec![workspace.floating_nodes.iter().collect()]);
-            let mut n = i3wsr_core::get_properties(vec![workspace.nodes.iter().collect()]);
-            n.append(&mut f);
+        let nodes = {
+            let mut n = workspace.nodes.clone();
+            for fnode in &workspace.floating_nodes {
+                let mut f = fnode.nodes.clone();
+                n.append(&mut f);
+            }
             n
         };
-        properties.extend(window_props);
+        ws_nodes.extend(nodes);
     }
     let config = i3wsr_core::Config::default();
     let res = i3wsr_core::regex::parse_config(&config)?;
-    let result: Result<Vec<String>, _> = properties
+    let result: Result<Vec<String>, _> = ws_nodes
         .iter()
-        .map(|props| i3wsr_core::get_title(props, &config, &res))
+        .map(|node| i3wsr_core::get_title(node, &config, &res))
         .collect();
     assert_eq!(result?, vec!["Gpick", "XTerm"]);
     Ok(())
@@ -64,26 +66,5 @@ fn collect_titles() -> Result<(), Box<dyn Error>> {
     }
     let expected = vec![vec!["Gpick", "XTerm"]];
     assert_eq!(result, expected);
-    Ok(())
-}
-
-#[test]
-fn get_properties() -> Result<(), Box<dyn Error>> {
-    env::set_var("DISPLAY", ":99.0");
-    let mut conn = swayipc::Connection::new()?;
-    let tree = conn.get_tree()?;
-    let workspaces = i3wsr_core::get_workspaces(tree);
-    let mut result: Vec<WindowProperties> = Vec::new();
-    for workspace in workspaces {
-        let window_props = {
-            let mut f = i3wsr_core::get_properties(vec![workspace.floating_nodes.iter().collect()]);
-            let mut n = i3wsr_core::get_properties(vec![workspace.nodes.iter().collect()]);
-            n.append(&mut f);
-            n
-        };
-        result.extend(window_props);
-    }
-    let result: usize = result.iter().filter(|v| v.class.is_some() || v.instance.is_some() || v.title.is_some()).count();
-    assert_eq!(result, 2);
     Ok(())
 }

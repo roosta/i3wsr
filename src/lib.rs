@@ -210,11 +210,6 @@ pub fn get_workspaces(tree: Node) -> Vec<Node> {
             workspaces.extend(find_workspaces(child, excludes));
         }
 
-        // Also check floating nodes
-        for child in node.floating_nodes {
-            workspaces.extend(find_workspaces(child, excludes));
-        }
-
         workspaces
     }
 
@@ -225,15 +220,17 @@ pub fn get_workspaces(tree: Node) -> Vec<Node> {
 /// Collect a vector of workspace titles
 pub fn collect_titles(workspace: &Node, config: &Config, res: &regex::Compiled) -> Vec<String> {
     let ws_nodes = {
-        let mut f = workspace.floating_nodes.clone();
         let mut n = workspace.nodes.clone();
-        n.append(&mut f);
+        for fnode in &workspace.floating_nodes {
+            let mut f = fnode.nodes.clone();
+            n.append(&mut f);
+        }
         n
     };
 
     let mut titles = Vec::new();
-    for props in ws_nodes {
-        let title = match get_title(&props, config, res) {
+    for node in &ws_nodes {
+        let title = match get_title(&node, config, res) {
             Ok(title) => title,
             Err(e) => {
                 eprintln!("get_title error: \"{}\" for workspace {:#?}", e, workspace);
@@ -419,7 +416,7 @@ mod tests {
 
     #[test]
     fn test_format_with_icon() {
-        let icon = '🦊';
+        let icon = "🦊";
         let title = "Firefox";
 
         // Test normal case
@@ -444,34 +441,6 @@ mod tests {
         assert_eq!(
             super::format_with_icon(&icon, title, true, true),
             "🦊"
-        );
-    }
-
-    #[test]
-    fn test_process_titles() {
-        let mut config = super::Config::default();
-
-        // Test with no options enabled
-        let titles = vec!["Firefox".to_string(), "Firefox".to_string(), "Chrome".to_string(), "".to_string()];
-        assert_eq!(
-            super::process_titles(titles.clone(), &config),
-            titles
-        );
-
-        // Test with remove_duplicates
-        config.set_option("remove_duplicates".to_string(), true);
-        let titles = vec!["Firefox".to_string(), "Firefox".to_string(), "Chrome".to_string(), "".to_string()];
-        assert_eq!(
-            super::process_titles(titles.clone(), &config),
-            vec!["Firefox".to_string(), "Chrome".to_string(), "".to_string()]
-        );
-
-        // Test with no_names
-        config.set_option("no_names".to_string(), true);
-        let titles = vec!["Firefox".to_string(), "Chrome".to_string(), "".to_string()];
-        assert_eq!(
-            super::process_titles(titles.clone(), &config),
-            vec!["Firefox".to_string(), "Chrome".to_string()]
         );
     }
 

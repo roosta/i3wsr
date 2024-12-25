@@ -295,7 +295,7 @@ fn run() -> Result<(), AppError> {
     let mut conn = Connection::new()?;
     let subscriptions = [EventType::Window, EventType::Workspace];
 
-    i3wsr_core::update_tree(&mut conn, &config, &res)
+    i3wsr_core::update_tree(&mut conn, &config, &res, false)
         .map_err(|e| AppError::Event(format!("Initial tree update failed: {}", e)))?;
 
     let event_connection = Connection::new()?;

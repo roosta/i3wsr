@@ -298,6 +298,7 @@ pub fn update_tree(
     conn: &mut Connection,
     config: &Config,
     res: &regex::Compiled,
+    focus: bool,
 ) -> Result<(), Box<dyn Error>> {
     let tree = conn.get_tree()?;
     let separator = config.get_general("separator").unwrap_or_else(|| " | ".to_string());
@@ -334,9 +335,11 @@ pub fn update_tree(
                 }
             }
 
-            // First focus the workspace to ensure we're renaming the correct one
-            // let focus_cmd = format!("workspace \"{}\"", old);
-            // conn.run_command(&focus_cmd)?;
+            // Focus on flag, fix for moving floating windows across multiple monitors
+            if focus {
+                let focus_cmd = format!("workspace \"{}\"", old);
+                conn.run_command(&focus_cmd)?;
+            }
 
             // Then rename it
             conn.run_command(&command)?;
@@ -358,7 +361,7 @@ pub fn handle_window_event(
     }
     match e.change {
         WindowChange::New | WindowChange::Close | WindowChange::Move | WindowChange::Title => {
-            update_tree(conn, config, res)
+            update_tree(conn, config, res, false)
                 .map_err(|e| AppError::Event(format!("Tree update failed: {}", e)))?;
         }
         _ => (),
@@ -380,7 +383,7 @@ pub fn handle_ws_event(
     }
     match e.change {
         WorkspaceChange::Empty | WorkspaceChange::Focus => {
-            update_tree(conn, config, res)
+            update_tree(conn, config, res, e.change == WorkspaceChange::Focus)
                 .map_err(|e| AppError::Event(format!("Tree update failed: {}", e)))?;
         }
         _ => (),

@@ -9,7 +9,7 @@ fn connection_tree() -> Result<(), Box<dyn Error>> {
     let mut conn = Connection::new()?;
     let config = Config::default();
     let res = i3wsr_core::regex::parse_config(&config)?;
-    assert!(update_tree(&mut conn, &config, &res).is_ok());
+    assert!(update_tree(&mut conn, &config, &res, false).is_ok());
 
     let tree = conn.get_tree()?;
     let workspaces = i3wsr_core::get_workspaces(tree);

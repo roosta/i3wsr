@@ -219,14 +219,10 @@ pub fn get_workspaces(tree: Node) -> Vec<Node> {
 
 /// Collect a vector of workspace titles
 pub fn collect_titles(workspace: &Node, config: &Config, res: &regex::Compiled) -> Vec<String> {
-    let ws_nodes = {
-        let mut n = workspace.nodes.clone();
-        for fnode in &workspace.floating_nodes {
-            let mut f = fnode.nodes.clone();
-            n.append(&mut f);
-        }
-        n
-    };
+    let ws_nodes = workspace.nodes.iter()
+        .chain(workspace.floating_nodes.iter())
+        .cloned()
+        .collect::<Vec<Node>>();
 
     let mut titles = Vec::new();
     for node in &ws_nodes {

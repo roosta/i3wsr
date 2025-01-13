@@ -24,7 +24,7 @@ pub struct Aliases {
     pub class: StringMap,
     pub instance: StringMap,
     pub name: StringMap,
-    pub app_id: StringMap
+    pub app_id: StringMap,
 }
 
 impl Aliases {
@@ -51,7 +51,7 @@ impl Default for Aliases {
             class: StringMap::new(),
             instance: StringMap::new(),
             name: StringMap::new(),
-            app_id: StringMap::new()
+            app_id: StringMap::new(),
         }
     }
 }

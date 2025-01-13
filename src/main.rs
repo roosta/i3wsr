@@ -95,10 +95,10 @@
 
 use clap::{Parser, ValueEnum};
 use dirs::config_dir;
-use swayipc::{Connection, Event, EventType, Fallible, WorkspaceChange};
 use i3wsr_core::config::{Config, ConfigError};
 use std::io;
 use std::path::Path;
+use swayipc::{Connection, Event, EventType, Fallible, WorkspaceChange};
 
 use i3wsr_core::AppError;
 
@@ -132,13 +132,23 @@ impl Properties {
 /// or through a TOML configuration file. Command line arguments take
 /// precedence over configuration file settings.
 #[derive(Parser, Debug)]
-#[command(author, version, about = "Dynamic workspace renamer for i3 and Sway window managers")]
-#[command(long_about = "Automatically renames workspaces based on their window contents. \
+#[command(
+    author,
+    version,
+    about = "Dynamic workspace renamer for i3 and Sway window managers"
+)]
+#[command(
+    long_about = "Automatically renames workspaces based on their window contents. \
     Supports custom icons, aliases, and various display options. \
-    Can be configured via command line flags or a TOML configuration file.")]
+    Can be configured via command line flags or a TOML configuration file."
+)]
 struct Args {
     /// Enable verbose logging of events and operations
-    #[arg(short, long, help = "Print detailed information about events and operations")]
+    #[arg(
+        short,
+        long,
+        help = "Print detailed information about events and operations"
+    )]
     verbose: bool,
     /// Path to TOML configuration file
     #[arg(
@@ -158,11 +168,7 @@ struct Args {
     no_icon_names: bool,
 
     /// Do not display window names, only show icons
-    #[arg(
-        short,
-        long,
-        help = "Show only icons, never display window names"
-    )]
+    #[arg(short, long, help = "Show only icons, never display window names")]
     no_names: bool,
 
     /// Remove duplicate entries in workspace names
@@ -196,10 +202,12 @@ struct Args {
 /// Loads configuration from a TOML file or creates default configuration
 fn load_config(config_path: Option<&str>) -> Result<Config, ConfigError> {
     let xdg_config = config_dir()
-        .ok_or_else(|| ConfigError::IoError(io::Error::new(
-            io::ErrorKind::NotFound,
-            "Could not determine config directory"
-        )))?
+        .ok_or_else(|| {
+            ConfigError::IoError(io::Error::new(
+                io::ErrorKind::NotFound,
+                "Could not determine config directory",
+            ))
+        })?
         .join("i3wsr/config.toml");
 
     match config_path {
@@ -236,14 +244,18 @@ fn apply_args_to_config(config: &mut Config, args: &Args) {
 
     // Apply general settings
     if let Some(split_char) = &args.split_at {
-        config.general.insert("split_at".to_string(), split_char.clone());
+        config
+            .general
+            .insert("split_at".to_string(), split_char.clone());
     }
 
     let display_property = args
         .display_property
         .as_ref()
         .map_or("class", |p| p.as_str());
-    config.general.insert("display_property".to_string(), display_property.to_string());
+    config
+        .general
+        .insert("display_property".to_string(), display_property.to_string());
 }
 
 /// Sets up the program by processing arguments and initializing configuration

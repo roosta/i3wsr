@@ -1,8 +1,8 @@
 use crate::Config;
 pub use regex::Regex;
+use std::collections::HashMap;
 use std::error::Error;
 use std::fmt;
-use std::collections::HashMap;
 
 #[derive(Debug)]
 pub enum RegexError {
@@ -36,7 +36,7 @@ pub struct Compiled {
     pub class: Vec<Pattern>,
     pub instance: Vec<Pattern>,
     pub name: Vec<Pattern>,
-    pub app_id: Vec<Pattern>
+    pub app_id: Vec<Pattern>,
 }
 
 /// Compiles a single regex pattern from a key-value pair
@@ -63,6 +63,6 @@ pub fn parse_config(config: &Config) -> Result<Compiled, RegexError> {
         class: compile_patterns(&config.aliases.class)?,
         instance: compile_patterns(&config.aliases.instance)?,
         name: compile_patterns(&config.aliases.name)?,
-        app_id: compile_patterns(&config.aliases.app_id)?
+        app_id: compile_patterns(&config.aliases.app_id)?,
     })
 }

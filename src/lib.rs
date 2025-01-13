@@ -11,16 +11,10 @@
 //! - Internal organization
 //!
 //! While you could technically use this as a library, it's not designed or maintained for that purpose.
-use swayipc::{
-    Connection,
-    Node,
-    NodeType,
-    WindowChange,
-    WindowEvent,
-    WorkspaceChange,
-    WorkspaceEvent,
-};
 use itertools::Itertools;
+use swayipc::{
+    Connection, Node, NodeType, WindowChange, WindowEvent, WorkspaceChange, WorkspaceEvent,
+};
 extern crate colored;
 use colored::Colorize;
 
@@ -108,11 +102,13 @@ fn get_option(config: &Config, key: &str) -> bool {
     config.get_option(key).unwrap_or(false)
 }
 
-fn find_alias(
-    value: Option<&String>,
-    patterns: &[(regex::Regex, String)],
-) -> Option<String> {
-    value.and_then(|val| patterns.iter().find(|(re, _)| re.is_match(val)).map(|(_, alias)| alias.clone()))
+fn find_alias(value: Option<&String>, patterns: &[(regex::Regex, String)]) -> Option<String> {
+    value.and_then(|val| {
+        patterns
+            .iter()
+            .find(|(re, _)| re.is_match(val))
+            .map(|(_, alias)| alias.clone())
+    })
 }
 
 fn format_with_icon(icon: &str, title: &str, no_names: bool, no_icon_names: bool) -> String {
@@ -130,7 +126,9 @@ pub fn get_title(
     config: &Config,
     res: &regex::Compiled,
 ) -> Result<String, Box<dyn Error>> {
-    let display_prop = config.get_general("display_property").unwrap_or_else(|| "class".to_string());
+    let display_prop = config
+        .get_general("display_property")
+        .unwrap_or_else(|| "class".to_string());
 
     let title = match &node.window_properties {
         // Xwayland / Xorg
@@ -151,9 +149,12 @@ pub fn get_title(
             });
 
             title.ok_or_else(|| {
-                format!("No title found: tried aliases and display_prop '{}'", display_prop)
+                format!(
+                    "No title found: tried aliases and display_prop '{}'",
+                    display_prop
+                )
             })?
-        },
+        }
         // Wayland
         None => {
             let alias = find_alias(node.name.as_ref(), &res.name)
@@ -167,7 +168,10 @@ pub fn get_title(
                 prop_value
             });
             title.ok_or_else(|| {
-                format!("No title found: tried aliases and display_prop '{}'", display_prop)
+                format!(
+                    "No title found: tried aliases and display_prop '{}'",
+                    display_prop
+                )
             })?
         }
     };
@@ -219,18 +223,18 @@ pub fn get_workspaces(tree: Node) -> Vec<Node> {
 
 /// Collect a vector of workspace titles
 pub fn collect_titles(workspace: &Node, config: &Config, res: &regex::Compiled) -> Vec<String> {
-    let ws_nodes = workspace.nodes.iter()
-        .chain(
-            workspace.floating_nodes.iter().flat_map(|fnode| {
-                // If the floating node has nested nodes (i3 style), use those
-                if !fnode.nodes.is_empty() {
-                    fnode.nodes.iter()
-                // Otherwise use the floating node itself (Sway style)
-                } else {
-                    std::slice::from_ref(fnode).iter()
-                }
-            })
-        )
+    let ws_nodes = workspace
+        .nodes
+        .iter()
+        .chain(workspace.floating_nodes.iter().flat_map(|fnode| {
+            // If the floating node has nested nodes (i3 style), use those
+            if !fnode.nodes.is_empty() {
+                fnode.nodes.iter()
+            // Otherwise use the floating node itself (Sway style)
+            } else {
+                std::slice::from_ref(fnode).iter()
+            }
+        }))
         .cloned()
         .collect::<Vec<Node>>();
 
@@ -258,26 +262,20 @@ fn apply_options(titles: Vec<String>, config: &Config) -> Vec<String> {
     }
 
     if get_option(config, "no_names") {
-        processed = processed.into_iter()
-            .filter(|s| !s.is_empty())
-            .collect();
+        processed = processed.into_iter().filter(|s| !s.is_empty()).collect();
     }
 
     processed
 }
 
 fn get_split_char(config: &Config) -> char {
-    config.get_general("split_at")
+    config
+        .get_general("split_at")
         .and_then(|s| if s.is_empty() { None } else { s.chars().next() })
         .unwrap_or(' ')
 }
 
-fn format_workspace_name(
-    initial: &str,
-    titles: &str,
-    split_at: char,
-    config: &Config
-) -> String {
+fn format_workspace_name(initial: &str, titles: &str, split_at: char, config: &Config) -> String {
     let mut new = String::from(initial);
 
     // Add colon if needed
@@ -307,13 +305,18 @@ pub fn update_tree(
     focus: bool,
 ) -> Result<(), Box<dyn Error>> {
     let tree = conn.get_tree()?;
-    let separator = config.get_general("separator").unwrap_or_else(|| " | ".to_string());
+    let separator = config
+        .get_general("separator")
+        .unwrap_or_else(|| " | ".to_string());
     let split_at = get_split_char(config);
 
     for workspace in get_workspaces(tree) {
         // Get the old workspace name
         let old = workspace.name.as_ref().ok_or_else(|| {
-            format!("Failed to get workspace name for workspace: {:#?}", workspace)
+            format!(
+                "Failed to get workspace name for workspace: {:#?}",
+                workspace
+            )
         })?;
 
         // Process titles
@@ -363,10 +366,19 @@ pub fn handle_window_event(
     res: &regex::Compiled,
 ) -> Result<(), AppError> {
     if VERBOSE.load(Ordering::Relaxed) {
-        println!("{} Change: {:?}, Container: {:?}", "[WINDOW EVENT]".yellow(), e.change, e.container);
+        println!(
+            "{} Change: {:?}, Container: {:?}",
+            "[WINDOW EVENT]".yellow(),
+            e.change,
+            e.container
+        );
     }
     match e.change {
-        WindowChange::New | WindowChange::Close | WindowChange::Move | WindowChange::Title | WindowChange::Floating => {
+        WindowChange::New
+        | WindowChange::Close
+        | WindowChange::Move
+        | WindowChange::Title
+        | WindowChange::Floating => {
             update_tree(conn, config, res, false)
                 .map_err(|e| AppError::Event(format!("Tree update failed: {}", e)))?;
         }
@@ -384,8 +396,13 @@ pub fn handle_ws_event(
     res: &regex::Compiled,
 ) -> Result<(), AppError> {
     if VERBOSE.load(Ordering::Relaxed) {
-        println!("{} Change: {:?}, Current: {:?}, Old: {:?}",
-           "[WORKSPACE EVENT]".green(), e.change, e.current, e.old);
+        println!(
+            "{} Change: {:?}, Current: {:?}, Old: {:?}",
+            "[WORKSPACE EVENT]".green(),
+            e.change,
+            e.current,
+            e.old
+        );
     }
 
     match e.change {
@@ -412,7 +429,10 @@ mod tests {
         // Test matching case
         let binding = "Firefox".to_string();
         let value = Some(&binding);
-        assert_eq!(super::find_alias(value, &patterns), Some("firefox".to_string()));
+        assert_eq!(
+            super::find_alias(value, &patterns),
+            Some("firefox".to_string())
+        );
 
         // Test non-matching case
         let binding = "Safari".to_string();
@@ -436,22 +456,13 @@ mod tests {
         );
 
         // Test no_names = true
-        assert_eq!(
-            super::format_with_icon(&icon, title, true, false),
-            "🦊"
-        );
+        assert_eq!(super::format_with_icon(&icon, title, true, false), "🦊");
 
         // Test no_icon_names = true
-        assert_eq!(
-            super::format_with_icon(&icon, title, false, true),
-            "🦊"
-        );
+        assert_eq!(super::format_with_icon(&icon, title, false, true), "🦊");
 
         // Test both flags true
-        assert_eq!(
-            super::format_with_icon(&icon, title, true, true),
-            "🦊"
-        );
+        assert_eq!(super::format_with_icon(&icon, title, true, true), "🦊");
     }
 
     #[test]
@@ -487,10 +498,7 @@ mod tests {
         );
 
         // Test empty titles with no empty_label
-        assert_eq!(
-            super::format_workspace_name("1", "", ':', &config),
-            "1"
-        );
+        assert_eq!(super::format_workspace_name("1", "", ':', &config), "1");
 
         // Test empty titles with empty_label
         config.set_general("empty_label".to_string(), "Empty".to_string());
@@ -505,5 +513,4 @@ mod tests {
             " Firefox Chrome"
         );
     }
-
 }

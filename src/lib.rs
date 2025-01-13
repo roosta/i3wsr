@@ -220,7 +220,17 @@ pub fn get_workspaces(tree: Node) -> Vec<Node> {
 /// Collect a vector of workspace titles
 pub fn collect_titles(workspace: &Node, config: &Config, res: &regex::Compiled) -> Vec<String> {
     let ws_nodes = workspace.nodes.iter()
-        .chain(workspace.floating_nodes.iter())
+        .chain(
+            workspace.floating_nodes.iter().flat_map(|fnode| {
+                // If the floating node has nested nodes (i3 style), use those
+                if !fnode.nodes.is_empty() {
+                    fnode.nodes.iter()
+                // Otherwise use the floating node itself (Sway style)
+                } else {
+                    std::slice::from_ref(fnode).iter()
+                }
+            })
+        )
         .cloned()
         .collect::<Vec<Node>>();
 

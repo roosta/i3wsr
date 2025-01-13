@@ -32,14 +32,18 @@ fn get_title() -> Result<(), Box<dyn Error>> {
     let mut ws_nodes: Vec<Node> = Vec::new();
     let workspaces = i3wsr_core::get_workspaces(tree);
     for workspace in &workspaces {
-        let nodes = {
-            let mut n = workspace.nodes.clone();
-            for fnode in &workspace.floating_nodes {
-                let mut f = fnode.nodes.clone();
-                n.append(&mut f);
-            }
-            n
-        };
+        let nodes = workspace.nodes.iter()
+            .chain(
+                workspace.floating_nodes.iter().flat_map(|fnode| {
+                    if !fnode.nodes.is_empty() {
+                        fnode.nodes.iter()
+                    } else {
+                        std::slice::from_ref(fnode).iter()
+                    }
+                })
+            )
+            .cloned()
+            .collect::<Vec<Node>>();
         ws_nodes.extend(nodes);
     }
     let config = i3wsr_core::Config::default();

@@ -356,7 +356,7 @@ pub fn handle_window_event(
         println!("{} Change: {:?}, Container: {:?}", "[WINDOW EVENT]".yellow(), e.change, e.container);
     }
     match e.change {
-        WindowChange::New | WindowChange::Close | WindowChange::Move | WindowChange::Title => {
+        WindowChange::New | WindowChange::Close | WindowChange::Move | WindowChange::Title | WindowChange::Floating => {
             update_tree(conn, config, res, false)
                 .map_err(|e| AppError::Event(format!("Tree update failed: {}", e)))?;
         }
@@ -377,6 +377,7 @@ pub fn handle_ws_event(
         println!("{} Change: {:?}, Current: {:?}, Old: {:?}",
            "[WORKSPACE EVENT]".green(), e.change, e.current, e.old);
     }
+
     match e.change {
         WorkspaceChange::Empty | WorkspaceChange::Focus => {
             update_tree(conn, config, res, e.change == WorkspaceChange::Focus)

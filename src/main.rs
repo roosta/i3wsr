@@ -154,6 +154,14 @@ struct Args {
         help = "Print detailed information about events and operations"
     )]
     verbose: bool,
+
+    /// Deprecated: Icon set option (maintained for backwards compatibility)
+    #[arg(
+        long,
+        value_name = "SET",
+        help = "[DEPRECATED] Icon set selection - will be removed in future versions"
+    )]
+    icons: Option<String>,
     /// Path to TOML configuration file
     #[arg(
         short,
@@ -266,6 +274,16 @@ fn apply_args_to_config(config: &mut Config, args: &Args) {
 /// Command line arguments take precedence over configuration file settings.
 fn setup() -> Result<Config, AppError> {
     let args = Args::parse();
+
+    // Handle deprecated --icons option
+    if let Some(icon_set) = &args.icons {
+        if icon_set == "awesome" {
+            eprintln!("Warning: The --icons option is deprecated and will be removed in a future version.");
+            eprintln!("Icons are now configured via the config file in the [icons] section.");
+        } else {
+            eprintln!("Warning: Invalid --icons value '{}'. Only 'awesome' is supported for backwards compatibility.", icon_set);
+        }
+    }
 
     // Set verbose mode if requested
     i3wsr_core::VERBOSE.store(args.verbose, std::sync::atomic::Ordering::Relaxed);

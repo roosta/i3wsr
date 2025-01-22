@@ -1,14 +1,14 @@
 [package]
 edition = "2021"
 name = "i3wsr"
-version = "3.0.0"
-description = "A workspace renamer for i3 and Sway window managers that dynamically updates workspace names based on their content. It monitors window events and renames workspaces to show the applications running in them."
+version = "3.1.0"
+description = "A dynamic workspace renamer for i3 and Sway that updates names to reflect their active applications."
 authors = ["Daniel Berg <mail@roosta.sh>"]
 repository =  "https://github.com/roosta/i3wsr"
 documentation =  "https://github.com/roosta/i3wsr"
 readme = "README.md"
-keywords = ["i3-wm", "window-manager", "workspaces", "linux"]
-categories = ["gui", "window-manager"]
+keywords = ["i3", "workspaces", "linux", "wayland", "sway", "xorg"]
+categories = ["gui", "command-line-utilities", "config"]
 license = "MIT"
 exclude = ["/script", "/assets/*", "Vagrantfile"]
 
@@ -20,9 +20,6 @@ path = "src/lib.rs"
 name = "i3wsr"
 path = "src/main.rs"
 
-[badges]
-travis-ci = { repository = "roosta/i3wsr" }
-
 [dependencies]
 clap = { version = "4.5", features = ["derive"] }
 toml = "0.7"
@@ -33,9 +30,3 @@ dirs = "5.0"
 thiserror = "1.0"
 swayipc = "3.0"
 colored = "2"
-
-# log = "0.4"
-
-# [dependencies.i3ipc]
-# git = 'https://github.com/roosta/i3ipc-rs'
-# path = "../i3ipc-rs"

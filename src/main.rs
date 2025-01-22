@@ -100,6 +100,7 @@ use i3wsr_core::config::{Config, ConfigError};
 use std::io;
 use std::path::Path;
 use swayipc::{Connection, Event, EventType, Fallible, WorkspaceChange};
+use std::env;
 
 use i3wsr_core::AppError;
 
@@ -307,14 +308,22 @@ fn handle_event(
                 .map_err(|e| AppError::Event(format!("Window event error: {}", e)))?;
         }
         Ok(Event::Workspace(e)) => {
-            if e.change == WorkspaceChange::Reload {
+            if e.change == WorkspaceChange::Reload && env::var("SWAYSOCK").is_ok() {
                 return Err(AppError::Abort(format!("Config reloaded")));
             }
             i3wsr_core::handle_ws_event(&e, conn, config, res)
                 .map_err(|e| AppError::Event(format!("Workspace event error: {}", e)))?;
         }
         Ok(_) => {}
-        Err(e) => return Err(AppError::Event(format!("IPC event error: {}", e))),
+        Err(e) => {
+            // Check if it's an UnexpectedEof error (common when i3/sway restarts)
+            if let swayipc::Error::Io(io_err) = &e {
+                if io_err.kind() == std::io::ErrorKind::UnexpectedEof {
+                    return Err(AppError::Abort("Window manager connection lost (EOF), shutting down...".to_string()));
+                }
+            }
+            return Err(AppError::Event(format!("IPC event error: {}", e)));
+        }
     }
     Ok(())
 }

@@ -1,29 +1,32 @@
 [package]
 edition = "2021"
 name = "i3wsr"
-version = "3.0.0"
-description = "Change i3-wm workspace names based on its contents"
+version = "3.1.0"
+description = "A dynamic workspace renamer for i3 and Sway that updates names to reflect their active applications."
 authors = ["Daniel Berg <mail@roosta.sh>"]
 repository =  "https://github.com/roosta/i3wsr"
 documentation =  "https://github.com/roosta/i3wsr"
 readme = "README.md"
-keywords = ["i3-wm", "window-manager", "workspaces", "linux"]
-categories = ["command-line-utilities"]
+keywords = ["i3", "workspaces", "linux", "wayland", "sway", "xorg"]
+categories = ["gui", "command-line-utilities", "config"]
 license = "MIT"
 exclude = ["/script", "/assets/*", "Vagrantfile"]
 
-[badges]
-travis-ci = { repository = "roosta/i3wsr" }
+[lib]
+name = "i3wsr_core"
+path = "src/lib.rs"
+
+[[bin]]
+name = "i3wsr"
+path = "src/main.rs"
 
 [dependencies]
-clap = { version = "4.3.11", features = ["derive"] }
-toml = "0.7.6"
-serde = { version = "1.0.171", features = ["derive"] }
-itertools = "0.11.0"
-regex = "1.9.1"
-dirs = "5.0.1"
-# log = "0.4"
-
-[dependencies.i3ipc]
-git = 'https://github.com/roosta/i3ipc-rs'
-# path = "../i3ipc-rs"
+clap = { version = "4.5", features = ["derive"] }
+toml = "0.7"
+serde = { version = "1.0", features = ["derive"] }
+itertools = "0.13"
+regex = "1.11"
+dirs = "5.0"
+thiserror = "1.0"
+swayipc = "3.0"
+colored = "2"

@@ -1,162 +1,246 @@
-use i3ipc::{
-    event::{
-        inner::{WindowChange, WorkspaceChange},
-        WindowEventInfo, WorkspaceEventInfo,
-    },
-    reply::{Node, NodeType, WindowProperty},
-    I3Connection,
-};
+//! # i3wsr - i3/Sway Workspace Renamer
+//!
+//! Internal library functionality for the i3wsr binary. This crate provides the core functionality
+//! for renaming i3/Sway workspaces based on their content.
+//!
+//! ## Note
+//!
+//! This is primarily a binary crate. The public functions and types are mainly exposed for:
+//! - Use by the binary executable
+//! - Testing purposes
+//! - Internal organization
+//!
+//! While you could technically use this as a library, it's not designed or maintained for that purpose.
 use itertools::Itertools;
-use std::collections::HashMap;
+use swayipc::{
+    Connection, Node, NodeType, WindowChange, WindowEvent, WorkspaceChange, WorkspaceEvent,
+};
+extern crate colored;
+use colored::Colorize;
 
 pub mod config;
-pub mod icons;
 pub mod regex;
-use config::Config;
+
+pub use config::Config;
 use std::error::Error;
+use std::fmt;
+use std::io;
+use std::sync::atomic::{AtomicBool, Ordering};
+
+/// Global flag to control debug output verbosity.
+///
+/// This flag is atomic to allow safe concurrent access without requiring mutex locks.
+/// It's primarily used by the binary to enable/disable detailed logging of events
+/// and commands.
+///
+/// # Usage
+///
+/// ```rust
+/// use std::sync::atomic::Ordering;
+///
+/// // Enable verbose output
+/// i3wsr_core::VERBOSE.store(true, Ordering::Relaxed);
+///
+/// // Check if verbose is enabled
+/// if i3wsr_core::VERBOSE.load(Ordering::Relaxed) {
+///     println!("Verbose output enabled");
+/// }
+/// ```
+pub static VERBOSE: AtomicBool = AtomicBool::new(false);
+
+#[derive(Debug)]
+pub enum AppError {
+    Config(config::ConfigError),
+    Connection(swayipc::Error),
+    Regex(regex::RegexError),
+    Event(String),
+    IoError(io::Error),
+    Abort(String),
+}
+
+impl fmt::Display for AppError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            AppError::Config(e) => write!(f, "Configuration error: {}", e),
+            AppError::Connection(e) => write!(f, "IPC connection error: {}", e),
+            AppError::Regex(e) => write!(f, "Regex compilation error: {}", e),
+            AppError::Event(e) => write!(f, "Event handling error: {}", e),
+            AppError::IoError(e) => write!(f, "IO error: {}", e),
+            AppError::Abort(e) => write!(f, "Abort signal, stopping program: {}", e),
+        }
+    }
+}
+
+impl Error for AppError {}
+
+impl From<config::ConfigError> for AppError {
+    fn from(err: config::ConfigError) -> Self {
+        AppError::Config(err)
+    }
+}
+
+impl From<swayipc::Error> for AppError {
+    fn from(err: swayipc::Error) -> Self {
+        AppError::Connection(err)
+    }
+}
+
+impl From<regex::RegexError> for AppError {
+    fn from(err: regex::RegexError) -> Self {
+        AppError::Regex(err)
+    }
+}
+
+impl From<io::Error> for AppError {
+    fn from(err: io::Error) -> Self {
+        AppError::IoError(err)
+    }
+}
 
 /// Helper fn to get options via config
 fn get_option(config: &Config, key: &str) -> bool {
-    return match config.options.get(key) {
-        Some(v) => *v,
-        None => false,
-    };
+    config.get_option(key).unwrap_or(false)
 }
 
-fn get_title(
-    props: &HashMap<WindowProperty, String>,
-    config: &Config,
-    res: &regex::Compiled,
-) -> Result<String, Box<dyn Error>> {
-    let wm_class = props.get(&WindowProperty::Class);
-    let wm_instance = props.get(&WindowProperty::Instance);
-    let wm_name = props.get(&WindowProperty::Title);
-    let display_prop = match config.general.get("display_property") {
-        Some(prop) => prop,
-        None => "class",
-    };
-
-    // Check for aliases using pre-compiled regex
-    let title = {
-        if let Some((_, alias)) =
-            wm_name.and_then(|name| res.name.iter().filter(|(re, _)| re.is_match(&name)).next())
-        {
-            alias
-        } else if let Some((_, alias)) = wm_instance.and_then(|instance| {
-            res.instance
-                .iter()
-                .filter(|(re, _)| re.is_match(&instance))
-                .next()
-        }) {
-            alias
-        } else if let Some((_, alias)) = wm_class.and_then(|class| {
-            res.class
-                .iter()
-                .filter(|(re, _)| re.is_match(&class))
-                .next()
-        }) {
-            alias
-        } else {
-            // Handle display prop, if no alias is located, then check for existiance and
-            // display_prop to set a fallback title
-            if wm_name.is_some() && display_prop == "name" {
-                wm_name.unwrap()
-            } else if wm_instance.is_some() && display_prop == "instance"  {
-                wm_instance.unwrap()
-            } else if wm_class.is_some() {
-                wm_class.unwrap()
-            } else {
-                Err(format!(
-                        "failed to get alias, display_prop {}, or class",
-                        display_prop
-                ))?
-            }
-        }
-    };
-
-    let no_names = get_option(&config, "no_names");
-    let no_icon_names = get_option(&config, "no_icon_names");
-
-    // Format final result
-    Ok(match config.icons.get(title) {
-        Some(icon) => {
-            if no_icon_names || no_names {
-                format!("{}", icon)
-            } else {
-                format!("{} {}", icon, title)
-            }
-        }
-        None => match config.general.get("default_icon") {
-            Some(default_icon) => {
-                if no_icon_names || no_names {
-                    format!("{}", default_icon)
-                } else {
-                    format!("{} {}", default_icon, title)
-                }
-            }
-            None => {
-                if no_names {
-                    String::new()
-                } else {
-                    format!("{}", title)
-                }
-            }
-        },
+fn find_alias(value: Option<&String>, patterns: &[(regex::Regex, String)]) -> Option<String> {
+    value.and_then(|val| {
+        patterns
+            .iter()
+            .find(|(re, _)| re.is_match(val))
+            .map(|(_, alias)| alias.clone())
     })
 }
 
-/// return a collection of workspace nodes
-fn get_workspaces(tree: Node) -> Vec<Node> {
-    let mut out = Vec::new();
+fn format_with_icon(icon: &str, title: &str, no_names: bool, no_icon_names: bool) -> String {
+    if no_icon_names || no_names {
+        icon.to_string()
+    } else {
+        format!("{} {}", icon, title)
+    }
+}
 
-    for output in tree.nodes {
-        for container in output.nodes {
-            for workspace in container.nodes {
-                if let NodeType::Workspace = workspace.nodetype {
-                    match &workspace.name {
-                        Some(name) => {
-                            if !name.eq("__i3_scratch") {
-                                out.push(workspace);
-                            }
-                        }
-                        None => (),
-                    }
+/// Gets a window title by trying to find an alias for the window, eventually falling back on
+/// class, or app_id, depending on platform.
+pub fn get_title(
+    node: &Node,
+    config: &Config,
+    res: &regex::Compiled,
+) -> Result<String, Box<dyn Error>> {
+    let display_prop = config
+        .get_general("display_property")
+        .unwrap_or_else(|| "class".to_string());
+
+    let title = match &node.window_properties {
+        // Xwayland / Xorg
+        Some(props) => {
+            // First try to find an alias using the window properties
+            let alias = find_alias(props.title.as_ref(), &res.name)
+                .or_else(|| find_alias(props.instance.as_ref(), &res.instance))
+                .or_else(|| find_alias(props.class.as_ref(), &res.class));
+
+            // If no alias found, use the configured display property
+            let title = alias.or_else(|| {
+                let prop_value = match display_prop.as_str() {
+                    "name" => props.title.clone(),
+                    "instance" => props.instance.clone(),
+                    _ => props.class.clone(),
+                };
+                prop_value
+            });
+
+            title.ok_or_else(|| {
+                format!(
+                    "No title found: tried aliases and display_prop '{}'",
+                    display_prop
+                )
+            })?
+        }
+        // Wayland
+        None => {
+            let alias = find_alias(node.name.as_ref(), &res.name)
+                .or_else(|| find_alias(node.app_id.as_ref(), &res.app_id));
+
+            let title = alias.or_else(|| {
+                let prop_value = match display_prop.as_str() {
+                    "name" => node.name.clone(),
+                    _ => node.app_id.clone(),
+                };
+                prop_value
+            });
+            title.ok_or_else(|| {
+                format!(
+                    "No title found: tried aliases and display_prop '{}'",
+                    display_prop
+                )
+            })?
+        }
+    };
+
+    // Try to find an alias first
+    let no_names = get_option(config, "no_names");
+    let no_icon_names = get_option(config, "no_icon_names");
+
+    Ok(if let Some(icon) = config.get_icon(&title) {
+        format_with_icon(&icon, &title, no_names, no_icon_names)
+    } else if let Some(default_icon) = config.get_general("default_icon") {
+        format_with_icon(&default_icon, &title, no_names, no_icon_names)
+    } else if no_names {
+        String::new()
+    } else {
+        title
+    })
+}
+
+/// Filters out special workspaces (like scratchpad) and collects regular workspaces
+/// from the window manager tree structure.
+pub fn get_workspaces(tree: Node) -> Vec<Node> {
+    let excludes = ["__i3_scratch", "__sway_scratch"];
+
+    // Helper function to recursively find workspaces in a node
+    fn find_workspaces(node: Node, excludes: &[&str]) -> Vec<Node> {
+        let mut workspaces = Vec::new();
+
+        // If this is a workspace node that's not excluded, add it
+        if matches!(node.node_type, NodeType::Workspace) {
+            if let Some(name) = &node.name {
+                if !excludes.contains(&name.as_str()) {
+                    workspaces.push(node.clone());
                 }
             }
         }
-    }
 
-    out
-}
-
-/// get window ids for any depth collection of nodes
-fn get_properties(mut nodes: Vec<Vec<&Node>>) -> Vec<HashMap<WindowProperty, String>> {
-    let mut window_props = Vec::new();
-
-    while let Some(next) = nodes.pop() {
-        for n in next {
-            nodes.push(n.nodes.iter().collect());
-            if let Some(w) = &n.window_properties {
-                window_props.push(w.to_owned());
-            }
+        // Recursively check child nodes
+        for child in node.nodes {
+            workspaces.extend(find_workspaces(child, excludes));
         }
+
+        workspaces
     }
 
-    window_props
+    // Start the recursive search from the root
+    find_workspaces(tree, &excludes)
 }
 
 /// Collect a vector of workspace titles
-fn collect_titles(workspace: &Node, config: &Config, res: &regex::Compiled) -> Vec<String> {
-    let window_props = {
-        let mut f = get_properties(vec![workspace.floating_nodes.iter().collect()]);
-        let mut n = get_properties(vec![workspace.nodes.iter().collect()]);
-        n.append(&mut f);
-        n
-    };
+pub fn collect_titles(workspace: &Node, config: &Config, res: &regex::Compiled) -> Vec<String> {
+    let ws_nodes = workspace
+        .nodes
+        .iter()
+        .chain(workspace.floating_nodes.iter().flat_map(|fnode| {
+            // If the floating node has nested nodes (i3 style), use those
+            if !fnode.nodes.is_empty() {
+                fnode.nodes.iter()
+            // Otherwise use the floating node itself (Sway style)
+            } else {
+                std::slice::from_ref(fnode).iter()
+            }
+        }))
+        .cloned()
+        .collect::<Vec<Node>>();
 
     let mut titles = Vec::new();
-    for props in window_props {
-        let title = match get_title(&props, config, res) {
+    for node in &ws_nodes {
+        let title = match get_title(&node, config, res) {
             Ok(title) => title,
             Err(e) => {
                 eprintln!("get_title error: \"{}\" for workspace {:#?}", e, workspace);
@@ -169,120 +253,162 @@ fn collect_titles(workspace: &Node, config: &Config, res: &regex::Compiled) -> V
     titles
 }
 
+/// Applies options on titles, like remove duplicates
+fn apply_options(titles: Vec<String>, config: &Config) -> Vec<String> {
+    let mut processed = titles;
+
+    if get_option(config, "remove_duplicates") {
+        processed = processed.into_iter().unique().collect();
+    }
+
+    if get_option(config, "no_names") {
+        processed = processed.into_iter().filter(|s| !s.is_empty()).collect();
+    }
+
+    processed
+}
+
+fn get_split_char(config: &Config) -> char {
+    config
+        .get_general("split_at")
+        .and_then(|s| if s.is_empty() { None } else { s.chars().next() })
+        .unwrap_or(' ')
+}
+
+fn format_workspace_name(initial: &str, titles: &str, split_at: char, config: &Config) -> String {
+    let mut new = String::from(initial);
+
+    // Add colon if needed
+    if split_at == ':' && !initial.is_empty() && !titles.is_empty() {
+        new.push(':');
+    }
+
+    // Add titles if present
+    if !titles.is_empty() {
+        new.push_str(titles);
+    } else if let Some(empty_label) = config.get_general("empty_label") {
+        new.push(' ');
+        new.push_str(&empty_label);
+    }
+
+    new
+}
+
+/// Internal function to update all workspace names based on their current content.
+/// This function is public for testing purposes and binary use only.
+///
 /// Update all workspace names in tree
 pub fn update_tree(
-    i3_conn: &mut I3Connection,
+    conn: &mut Connection,
     config: &Config,
     res: &regex::Compiled,
+    focus: bool,
 ) -> Result<(), Box<dyn Error>> {
-    let tree = i3_conn.get_tree()?;
-    for workspace in get_workspaces(tree) {
-        let separator = match config.general.get("separator") {
-            Some(s) => s,
-            None => " | ",
-        };
+    let tree = conn.get_tree()?;
+    let separator = config
+        .get_general("separator")
+        .unwrap_or_else(|| " | ".to_string());
+    let split_at = get_split_char(config);
 
-        let titles = collect_titles(&workspace, config, res);
-        let titles = if get_option(&config, "remove_duplicates") {
-            titles.into_iter().unique().collect()
-        } else {
-            titles
-        };
-        let titles = if get_option(&config, "no_names") {
-            titles
-                .into_iter()
-                .filter(|s| !s.is_empty())
-                .collect::<Vec<String>>()
-        } else {
-            titles
-        };
-        let titles = titles.join(separator);
-        let titles = if !titles.is_empty() {
-            format!(" {}", titles)
-        } else {
-            titles
-        };
-        let old: String = workspace.name.to_owned().ok_or_else(|| {
+    for workspace in get_workspaces(tree) {
+        // Get the old workspace name
+        let old = workspace.name.as_ref().ok_or_else(|| {
             format!(
                 "Failed to get workspace name for workspace: {:#?}",
                 workspace
             )
         })?;
 
-        // Get split_at arg
-        let split_at = match config.general.get("split_at") {
-            Some(s) => {
-                if !s.is_empty() {
-                    s.chars().next().unwrap()
-                } else {
-                    ' '
-                }
-            }
-            None => ' ',
+        // Process titles
+        let titles = collect_titles(&workspace, config, res);
+        let titles = apply_options(titles, config);
+        let titles = if !titles.is_empty() {
+            format!(" {}", titles.join(&separator))
+        } else {
+            String::new()
         };
 
-        // Get the initial element we want to keep
-        let initial = match old.split(split_at).next() {
-            Some(i) => i,
-            None => "",
-        };
+        // Get initial part of workspace name
+        let initial = old.split(split_at).next().unwrap_or("");
 
-        let mut new: String = String::from(initial);
+        // Format new workspace name
+        let new = format_workspace_name(initial, &titles, split_at, config);
 
-        // if we do split on colon we need to insert a new one, cause it gets split out
-        if split_at == ':' && !initial.is_empty() && !titles.is_empty() {
-            new.push(':');
-        }
-        // Push new window titles to new string
-        if !titles.is_empty() {
-            new.push_str(&titles);
-        }
-
-        if titles.is_empty() {
-            match config.general.get("empty_label") {
-                Some(default_label) => {
-                    new.push_str(" ");
-                    new.push_str(default_label);
-                }
-                None => (),
-            }
-        }
-
-        // Dispatch to i3
-        if old != new {
+        // Only send command if name changed
+        if old != &new {
             let command = format!("rename workspace \"{}\" to \"{}\"", old, new);
-            i3_conn.run_command(&command)?;
+            if VERBOSE.load(Ordering::Relaxed) {
+                println!("{} {}", "[COMMAND]".blue(), command);
+                if let Some(output) = &workspace.output {
+                    println!("{} Workspace on output: {}", "[INFO]".cyan(), output);
+                }
+            }
+
+            // Focus on flag, fix for moving floating windows across multiple monitors
+            if focus {
+                let focus_cmd = format!("workspace \"{}\"", old);
+                conn.run_command(&focus_cmd)?;
+            }
+
+            // Then rename it
+            conn.run_command(&command)?;
         }
     }
     Ok(())
 }
 
-/// handles new and close window events, to set the workspace name based on content
+/// Processes various window events (new, close, move, title changes) and updates
+/// workspace names accordingly. This is a core part of the event loop in the main binary.
 pub fn handle_window_event(
-    e: &WindowEventInfo,
-    i3_conn: &mut I3Connection,
+    e: &WindowEvent,
+    conn: &mut Connection,
     config: &Config,
     res: &regex::Compiled,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<(), AppError> {
+    if VERBOSE.load(Ordering::Relaxed) {
+        println!(
+            "{} Change: {:?}, Container: {:?}",
+            "[WINDOW EVENT]".yellow(),
+            e.change,
+            e.container
+        );
+    }
     match e.change {
-        WindowChange::New | WindowChange::Close | WindowChange::Move | WindowChange::Title => {
-            update_tree(i3_conn, config, res)?;
+        WindowChange::New
+        | WindowChange::Close
+        | WindowChange::Move
+        | WindowChange::Title
+        | WindowChange::Floating => {
+            update_tree(conn, config, res, false)
+                .map_err(|e| AppError::Event(format!("Tree update failed: {}", e)))?;
         }
         _ => (),
     }
     Ok(())
 }
 
-/// handles ws events,
+/// Processes workspace events (empty, focus changes) and updates workspace names
+/// as needed. This is a core part of the event loop in the main binary.
 pub fn handle_ws_event(
-    e: &WorkspaceEventInfo,
-    i3_conn: &mut I3Connection,
+    e: &WorkspaceEvent,
+    conn: &mut Connection,
     config: &Config,
     res: &regex::Compiled,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<(), AppError> {
+    if VERBOSE.load(Ordering::Relaxed) {
+        println!(
+            "{} Change: {:?}, Current: {:?}, Old: {:?}",
+            "[WORKSPACE EVENT]".green(),
+            e.change,
+            e.current,
+            e.old
+        );
+    }
+
     match e.change {
         WorkspaceChange::Empty | WorkspaceChange::Focus => {
-            update_tree(i3_conn, config, res)?;
+            update_tree(conn, config, res, e.change == WorkspaceChange::Focus)
+                .map_err(|e| AppError::Event(format!("Tree update failed: {}", e)))?;
         }
         _ => (),
     }
@@ -291,100 +417,100 @@ pub fn handle_ws_event(
 
 #[cfg(test)]
 mod tests {
-    use i3ipc::reply::{NodeType, WindowProperty};
-    use std::collections::HashMap;
-    use std::env;
-    use std::error::Error;
+    use regex::Regex;
 
     #[test]
-    fn connection_tree() -> Result<(), Box<dyn Error>> {
-        env::set_var("DISPLAY", ":99.0");
-        let mut i3_conn = super::I3Connection::connect()?;
-        let config = super::Config::default();
-        let res = super::regex::parse_config(&config)?;
-        assert!(super::update_tree(&mut i3_conn, &config, &res).is_ok());
-        let tree = i3_conn.get_tree()?;
-        let mut name: String = String::new();
-        for output in &tree.nodes {
-            for container in &output.nodes {
-                for workspace in &container.nodes {
-                    if let NodeType::Workspace = workspace.nodetype {
-                        let ws_n = workspace.name.to_owned();
-                        name = ws_n.unwrap();
-                    }
-                }
-            }
-        }
-        assert_eq!(name, String::from("1 Gpick | XTerm"));
-        Ok(())
+    fn test_find_alias() {
+        let patterns = vec![
+            (Regex::new(r"Firefox").unwrap(), "firefox".to_string()),
+            (Regex::new(r"Chrome").unwrap(), "chrome".to_string()),
+        ];
+
+        // Test matching case
+        let binding = "Firefox".to_string();
+        let value = Some(&binding);
+        assert_eq!(
+            super::find_alias(value, &patterns),
+            Some("firefox".to_string())
+        );
+
+        // Test non-matching case
+        let binding = "Safari".to_string();
+        let value = Some(&binding);
+        assert_eq!(super::find_alias(value, &patterns), None);
+
+        // Test None case
+        let value: Option<&String> = None;
+        assert_eq!(super::find_alias(value, &patterns), None);
     }
 
     #[test]
-    fn get_title() -> Result<(), Box<dyn Error>> {
-        env::set_var("DISPLAY", ":99.0");
-        let mut i3_conn = super::I3Connection::connect()?;
+    fn test_format_with_icon() {
+        let icon = "🦊";
+        let title = "Firefox";
 
-        let tree = i3_conn.get_tree()?;
-        let mut properties: Vec<HashMap<WindowProperty, String>> = Vec::new();
-        let workspaces = super::get_workspaces(tree);
-        for workspace in &workspaces {
-            let window_props = {
-                let mut f = super::get_properties(vec![workspace.floating_nodes.iter().collect()]);
-                let mut n = super::get_properties(vec![workspace.nodes.iter().collect()]);
-                n.append(&mut f);
-                n
-            };
-            for p in window_props {
-                properties.push(p);
-            }
-        }
-        let config = super::Config::default();
-        let res = super::regex::parse_config(&config)?;
-        let result: Result<Vec<String>, _> = properties
-            .iter()
-            .map(|props| super::get_title(&props, &config, &res))
-            .collect();
-        assert_eq!(result?, vec!["Gpick", "XTerm"]);
-        Ok(())
+        // Test normal case
+        assert_eq!(
+            super::format_with_icon(&icon, title, false, false),
+            "🦊 Firefox"
+        );
+
+        // Test no_names = true
+        assert_eq!(super::format_with_icon(&icon, title, true, false), "🦊");
+
+        // Test no_icon_names = true
+        assert_eq!(super::format_with_icon(&icon, title, false, true), "🦊");
+
+        // Test both flags true
+        assert_eq!(super::format_with_icon(&icon, title, true, true), "🦊");
     }
 
     #[test]
-    fn collect_titles() -> Result<(), Box<dyn Error>> {
-        env::set_var("DISPLAY", ":99.0");
-        let mut i3_conn = super::I3Connection::connect()?;
-        let tree = i3_conn.get_tree()?;
-        let workspaces = super::get_workspaces(tree);
-        let mut result: Vec<Vec<String>> = Vec::new();
-        let config = super::Config::default();
-        let res = super::regex::parse_config(&config)?;
-        for workspace in workspaces {
-            result.push(super::collect_titles(&workspace, &config, &res));
-        }
-        let expected = vec![vec!["Gpick", "XTerm"]];
-        assert_eq!(result, expected);
-        Ok(())
+    fn test_get_split_char() {
+        let mut config = super::Config::default();
+
+        // Test default (space)
+        assert_eq!(super::get_split_char(&config), ' ');
+
+        // Test with custom split char
+        config.set_general("split_at".to_string(), ":".to_string());
+        assert_eq!(super::get_split_char(&config), ':');
+
+        // Test with empty string
+        config.set_general("split_at".to_string(), "".to_string());
+        assert_eq!(super::get_split_char(&config), ' ');
     }
 
     #[test]
-    fn get_properties() -> Result<(), Box<dyn Error>> {
-        env::set_var("DISPLAY", ":99.0");
-        let mut i3_conn = super::I3Connection::connect()?;
-        let tree = i3_conn.get_tree()?;
-        let workspaces = super::get_workspaces(tree);
-        let mut result: Vec<HashMap<WindowProperty, String>> = Vec::new();
-        for workspace in workspaces {
-            let window_props = {
-                let mut f = super::get_properties(vec![workspace.floating_nodes.iter().collect()]);
-                let mut n = super::get_properties(vec![workspace.nodes.iter().collect()]);
-                n.append(&mut f);
-                n
-            };
-            for props in window_props {
-                result.push(props)
-            }
-        }
-        let result: usize = result.iter().filter(|v| !v.is_empty()).count();
-        assert_eq!(result, 2);
-        Ok(())
+    fn test_format_workspace_name() {
+        let mut config = super::Config::default();
+
+        // Test normal case with space
+        assert_eq!(
+            super::format_workspace_name("1", " Firefox Chrome", ' ', &config),
+            "1 Firefox Chrome"
+        );
+
+        // Test with colon separator
+        assert_eq!(
+            super::format_workspace_name("1", " Firefox Chrome", ':', &config),
+            "1: Firefox Chrome"
+        );
+
+        // Test empty titles with no empty_label
+        assert_eq!(super::format_workspace_name("1", "", ':', &config), "1");
+
+        // Test empty titles with empty_label
+        config.set_general("empty_label".to_string(), "Empty".to_string());
+        assert_eq!(
+            super::format_workspace_name("1", "", ':', &config),
+            "1 Empty"
+        );
+
+        // Test empty initial
+        assert_eq!(
+            super::format_workspace_name("", " Firefox Chrome", ':', &config),
+            " Firefox Chrome"
+        );
     }
 }

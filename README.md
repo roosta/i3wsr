@@ -1,7 +1,7 @@
 i3wsr - i3 workspace renamer
 ======
 
-[![Test Status](https://github.com/roosta/i3wsr/actions/workflows/test.yaml/badge.svg?branch=develop)](https://github.com/roosta/i3wsr/actions)
+[![Test Status](https://github.com/roosta/i3wsr/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/roosta/i3wsr/actions)
 [![Crates.io](https://img.shields.io/crates/v/i3wsr)](https://crates.io/crates/i3wsr)
 
 A workspace renamer for [i3](https://i3wm.org/) and [Sway](https://swaywm.org/)
@@ -51,9 +51,11 @@ cargo build --release
 Then place the built binary, located at `target/release/i3wsr`, somewhere on your `$path`.
 
 ### Arch linux
+
 If you're running Arch you can install either [stable](https://aur.archlinux.org/packages/i3wsr/), or [latest](https://aur.archlinux.org/packages/i3wsr-git/) from AUR thanks to reddit user [u/OniTux](https://www.reddit.com/user/OniTux).
 
 ## Usage
+
 Just launch the program and it'll listen for events if you are running I3.
 Another option is to put something like this in your i3 config
 

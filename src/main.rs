@@ -52,13 +52,13 @@
 //! ".*mutt$" = "Mail"
 //!
 //! [general]
-//! separator = " | "      # Separator between window names
-//! split_at = ":"        # Character to split workspace number
-//! empty_label = "🌕"    # Label for empty workspaces
-//! display_property = "class"  # Default property to display (class/instance/name)
+//! separator = " | "          # Separator between window names
+//! split_at = ":"             # Character to split workspace number
+//! empty_label = "🌕"         # Label for empty workspaces
+//! display_property = "class" # Default property to display (class/app_id/instance/name)
 //!
 //! [options]
-//! remove_duplicates = false  # Remove duplicate window names
+//! remove_duplicates = false # Remove duplicate window names
 //! no_names = false          # Show only icons
 //! no_icon_names = false     # Show names only if no icon available
 //! ```
@@ -70,17 +70,18 @@
 //! - `--no-icon-names`: Show only icons when available
 //! - `--no-names`: Never show window names
 //! - `--remove-duplicates`: Remove duplicate entries
-//! - `--display-property <PROPERTY>`: Window property to use (class/instance/name)
+//! - `--display-property <PROPERTY>`: Window property to use (class/app_id/instance/name)
 //! - `--split-at <CHAR>`: Character to split workspace names
 //!
 //! ### Window Properties:
 //!
 //! Three window properties can be used for naming:
 //! - `class`: Default, most stable (WM_CLASS)
+//! - `app_id`: In place of class only for sway/wayland
 //! - `instance`: More specific than class (WM_INSTANCE)
 //! - `name`: Most detailed but volatile (WM_NAME)
 //!
-//! Properties are checked in order: name -> instance -> class
+//! Properties are checked in order: name -> instance -> class/app_id
 //!
 //! ### Special Features:
 //!
@@ -109,11 +110,13 @@ use i3wsr_core::AppError;
 /// - `Class`: Uses WM_CLASS (default, most stable)
 /// - `Instance`: Uses WM_INSTANCE (more specific than class)
 /// - `Name`: Uses WM_NAME (most detailed but volatile)
+/// - `AppId`: In place of class only for sway/wayland
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 enum Properties {
     Class,
     Instance,
     Name,
+    AppId
 }
 
 impl Properties {
@@ -122,6 +125,7 @@ impl Properties {
             Properties::Class => "class",
             Properties::Instance => "instance",
             Properties::Name => "name",
+            Properties::AppId => "app_id",
         }
     }
 }

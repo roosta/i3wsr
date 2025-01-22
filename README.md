@@ -219,7 +219,7 @@ Which property to display if no aliases is found:
 display_property = "instance"
 ```
 
-Possible options are `class` `app_id`, `instance`, and `name`, and will default
+Possible options are `class`, `app_id`, `instance`, and `name`, and will default
 to `class` or `app_id` depending on display server if not present.
 
 You can alternatively supply cmd argument:

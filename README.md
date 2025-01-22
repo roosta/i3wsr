@@ -4,10 +4,16 @@ i3wsr - i3 workspace renamer
 [![Test Status](https://github.com/roosta/i3wsr/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/roosta/i3wsr/actions)
 [![Crates.io](https://img.shields.io/crates/v/i3wsr)](https://crates.io/crates/i3wsr)
 
-A workspace renamer for [i3](https://i3wm.org/) and [Sway](https://swaywm.org/)
-window managers that dynamically updates workspace names based on their
-content. It monitors window events and renames workspaces to show the
-applications running in them.
+A dynamic workspace renamer for i3 and Sway that updates names to reflect their
+active applications.
+
+`i3wsr` can be configured through command-line flags or a `TOML` config file,
+offering extensive customization of workspace names, icons, aliases, and
+display options.
+
+## Preview
+
+![preview](https://raw.githubusercontent.com/roosta/i3wsr/main/assets/preview.gif)
 
 ## Rebrand and Wayland support
 
@@ -21,10 +27,6 @@ before publishing anything under a new name.
 
 Development forward will focus on Sway, but backward compatibility with I3 will
 be maintained.
-
-## Preview
-
-![preview](https://raw.githubusercontent.com/roosta/i3wsr/main/assets/preview.gif)
 
 ## Requirements
 

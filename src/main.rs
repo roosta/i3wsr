@@ -1,8 +1,8 @@
 //! # i3wsr - i3/Sway Workspace Renamer
 //!
-//! A workspace renamer for i3 and Sway window managers that dynamically updates workspace names
-//! based on their content. It monitors window events and renames workspaces to show the applications
-//! running in them.
+//!
+//! A dynamic workspace renamer for i3 and Sway that updates names to reflect their
+//! active applications.
 //!
 //! ## Usage
 //!

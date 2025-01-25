@@ -221,26 +221,31 @@ pub fn get_workspaces(tree: Node) -> Vec<Node> {
     find_workspaces(tree, &excludes)
 }
 
-/// Collect a vector of workspace titles
+/// Collect a vector of workspace titles, recursively traversing all nested nodes
 pub fn collect_titles(workspace: &Node, config: &Config, res: &regex::Compiled) -> Vec<String> {
-    let ws_nodes = workspace
-        .nodes
-        .iter()
-        .chain(workspace.floating_nodes.iter().flat_map(|fnode| {
-            // If the floating node has nested nodes (i3 style), use those
-            if !fnode.nodes.is_empty() {
-                fnode.nodes.iter()
-            // Otherwise use the floating node itself (Sway style)
-            } else {
-                std::slice::from_ref(fnode).iter()
-            }
-        }))
-        .cloned()
-        .collect::<Vec<Node>>();
+    fn collect_nodes<'a>(node: &'a Node, nodes: &mut Vec<&'a Node>) {
+        // Add the current node if it has window properties or app_id
+        if node.window_properties.is_some() || node.app_id.is_some() {
+            nodes.push(node);
+        }
+
+        // Recursively collect from regular nodes
+        for child in &node.nodes {
+            collect_nodes(child, nodes);
+        }
+
+        // Recursively collect from floating nodes
+        for child in &node.floating_nodes {
+            collect_nodes(child, nodes);
+        }
+    }
+
+    let mut all_nodes = Vec::new();
+    collect_nodes(workspace, &mut all_nodes);
 
     let mut titles = Vec::new();
-    for node in &ws_nodes {
-        let title = match get_title(&node, config, res) {
+    for node in all_nodes {
+        let title = match get_title(node, config, res) {
             Ok(title) => title,
             Err(e) => {
                 eprintln!("get_title error: \"{}\" for workspace {:#?}", e, workspace);

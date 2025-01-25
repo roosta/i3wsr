@@ -58,15 +58,18 @@ If you're running Arch you can install either [stable](https://aur.archlinux.org
 
 ## Usage
 
-Just launch the program and it'll listen for events if you are running I3.
-Another option is to put something like this in your i3 config
+Just launch the program and it'll listen for events if you are running I3 or
+Sway. Another option is to put something like this in your i3 or Sway config:
 
 ```
-# cargo
-exec_always --no-startup-id $HOME/.cargo/bin/i3wsr
-# AUR
-exec_always --no-startup-id /usr/bin/i3wsr
+# i3
+exec_always --no-startup-id i3wsr
+
+# Sway
+exec_always i3wsr
 ```
+
+> `exec_always` ensures a new instance of `i3wsr` is started when config is reloaded or wm/compositor is restarted.
 
 ## Configuration
 

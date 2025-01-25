@@ -1,7 +1,7 @@
 [package]
 edition = "2021"
 name = "i3wsr"
-version = "3.1.0"
+version = "3.1.1"
 description = "A dynamic workspace renamer for i3 and Sway that updates names to reflect their active applications."
 authors = ["Daniel Berg <mail@roosta.sh>"]
 repository =  "https://github.com/roosta/i3wsr"

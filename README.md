@@ -197,6 +197,8 @@ Google-chrome = "Chrome"
 
 #### Name
 
+> Sway and i3
+
 Uses `name` instead of `instance` and `class|app_id`, this option is very
 verbose and relies on regex matching of aliases to be of any use.
 
@@ -265,7 +267,7 @@ separator = "  "
 ### Default icon
 To use a default icon when no other is defined use:
 ```toml
-[icons]
+[general]
 default_icon = "💀"
 ```
 ### Empty label

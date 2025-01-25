@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v3.1.1] - 2025-01-25
+
+### Bug Fixes
+
+- Fix an issue where `i3wsr` would not collect `i3` titles correctly. This also
+  more cleanly handles the differing tree structures between sway and i3
+  without the need for a conditional.
+
 ## [v3.1.0] - 2025-01-22
 
 ### Bug Fixes

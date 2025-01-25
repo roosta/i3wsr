@@ -5,7 +5,6 @@ version = "3.1.0"
 description = "A dynamic workspace renamer for i3 and Sway that updates names to reflect their active applications."
 authors = ["Daniel Berg <mail@roosta.sh>"]
 repository =  "https://github.com/roosta/i3wsr"
-documentation =  "https://github.com/roosta/i3wsr"
 readme = "README.md"
 keywords = ["i3", "workspaces", "linux", "sway"]
 categories = ["gui", "command-line-utilities", "config"]

@@ -262,13 +262,11 @@ fn apply_args_to_config(config: &mut Config, args: &Args) {
             .insert("split_at".to_string(), split_char.clone());
     }
 
-    let display_property = args
-        .display_property
-        .as_ref()
-        .map_or("class", |p| p.as_str());
-    config
-        .general
-        .insert("display_property".to_string(), display_property.to_string());
+    if let Some(display_property) = &args.display_property {
+        config
+            .general
+            .insert("display_property".to_string(), display_property.as_str().to_string());
+    }
 }
 
 /// Sets up the program by processing arguments and initializing configuration

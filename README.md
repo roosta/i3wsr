@@ -326,5 +326,12 @@ This can give a cleaner config, but I've kept the old behavior as default.
 
 ## Testing
 
-To run tests locally [Vagrant](https://www.vagrantup.com/) is required. Run
-`script/run_tests.sh` to run tests on ubuntu xenial.
+To run unit tests use `cargo test --lib`, to run the full test suite locally
+use the [Containerfile](./Containerfile) with [Podman](https://podman.io/) for
+example:
+
+```sh
+# cd project root
+podman build -t i3wsr-test .
+podman run -t --name i3wsr-test i3wsr-test:latest
+```

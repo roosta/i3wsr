@@ -13,7 +13,7 @@ jobs:
         run: sudo apt-get install -y i3-wm gpick xterm
 
       - name: Setup test environment
-        run: script/setup.sh
+        run: tests/setup.sh
 
       - name: Run tests
         run: cargo test

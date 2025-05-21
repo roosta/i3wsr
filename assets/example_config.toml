@@ -37,3 +37,4 @@ default_icon = ""
 remove_duplicates = false
 no_names = false
 no_icon_names = false
+focus_fix = false

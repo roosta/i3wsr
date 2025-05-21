@@ -61,6 +61,7 @@
 //! remove_duplicates = false # Remove duplicate window names
 //! no_names = false          # Show only icons
 //! no_icon_names = false     # Show names only if no icon available
+//! focus_fix = false         # Enable experimental focus fix, see #34 for more. Ignore if you don't know you need this.
 //! ```
 //!
 //! ### Command Line Options:
@@ -156,6 +157,12 @@ struct Args {
     )]
     verbose: bool,
 
+    #[arg(
+        long,
+        help = "Enable experimental focus fix, see #34 for more. Ignore if you don't know you need this."
+    )]
+    focus_fix: bool,
+
     /// Deprecated: Icon set option (maintained for backwards compatibility)
     #[arg(
         long,
@@ -247,6 +254,7 @@ fn apply_args_to_config(config: &mut Config, args: &Args) {
         ("no_icon_names", args.no_icon_names),
         ("no_names", args.no_names),
         ("remove_duplicates", args.remove_duplicates),
+        ("focus_fix", args.focus_fix),
     ];
 
     for (key, value) in options {

@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - 2025-05-21
+
+### Bug fixes
+
+- Fix issue with unwanted workspace focus change on rename dispatches. Add
+  feature flag for the focus fix, now needs to be enabled manually via either
+  config or cmdline flags
+  `--focus-fix`.
+  ```toml
+  [options]
+  focus_fix = true
+  ```
+
+
 ## [v3.1.1] - 2025-01-25
 
 ### Bug Fixes
@@ -159,6 +173,7 @@ display_property = "instance" # class, instance, name
 - Document about the default config file
 
 
+[Unreleased]: https://github.com/roosta/i3wsr/compare/v3.1.1...HEAD
 [v3.1.1]: https://github.com/roosta/i3wsr/compare/v3.1.0...v3.1.1
 [v3.1.0]: https://github.com/roosta/i3wsr/compare/v3.0.0...v3.1.0
 [v3.0.0]: https://github.com/roosta/i3wsr/compare/v2.1.1...v3.0.0

@@ -351,6 +351,7 @@ pub fn update_tree(
 
             // Focus on flag, fix for moving floating windows across multiple monitors
             if focus {
+                dbg!("FOCUS CHANGE!!!!");
                 let focus_cmd = format!("workspace \"{}\"", old);
                 conn.run_command(&focus_cmd)?;
             }
@@ -410,9 +411,11 @@ pub fn handle_ws_event(
         );
     }
 
+    let focus_fix = get_option(config, "focus_fix");
+
     match e.change {
         WorkspaceChange::Empty | WorkspaceChange::Focus => {
-            update_tree(conn, config, res, e.change == WorkspaceChange::Focus)
+            update_tree(conn, config, res, e.change == WorkspaceChange::Focus && focus_fix)
                 .map_err(|e| AppError::Event(format!("Tree update failed: {}", e)))?;
         }
         _ => (),

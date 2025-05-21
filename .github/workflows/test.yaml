@@ -10,7 +10,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install test dependencies
-        run: sudo apt-get install -y i3-wm gcc gpick xterm
+        run: sudo apt-get install -y i3-wm gpick xterm
 
       - name: Setup test environment
         run: script/setup.sh

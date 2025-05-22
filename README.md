@@ -335,3 +335,7 @@ example:
 podman build -t i3wsr-test .
 podman run -t --name i3wsr-test i3wsr-test:latest
 ```
+
+## License
+
+[MIT](./LICENSE)

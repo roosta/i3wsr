@@ -351,7 +351,6 @@ pub fn update_tree(
 
             // Focus on flag, fix for moving floating windows across multiple monitors
             if focus {
-                dbg!("FOCUS CHANGE!!!!");
                 let focus_cmd = format!("workspace \"{}\"", old);
                 conn.run_command(&focus_cmd)?;
             }

@@ -10,12 +10,14 @@ jobs:
     container:
       image: rust:latest
     steps:
-      - name: Checkout repository
       - uses: actions/checkout@v4
+
       - name: Install toml-cli
         run: cargo install toml-cli
+
       - name: Check version
         run: test "v$(toml get -r Cargo.toml package.version)" = "${{ github.ref_name }}"
+
       - name: Publish
       - run: cargo publish
         env:

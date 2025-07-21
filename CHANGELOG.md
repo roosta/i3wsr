@@ -2,8 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased] - 2025-05-21
+## [Unreleased] - 2025-07-21
 
+## [v3.1.2] - 2025-07-21
 ### Bug fixes
 
 - Fix issue with unwanted workspace focus change on rename dispatches. Add
@@ -15,6 +16,7 @@ All notable changes to this project will be documented in this file.
   focus_fix = true
   ```
 
+Ref: https://github.com/roosta/i3wsr/issues/42
 
 ## [v3.1.1] - 2025-01-25
 
@@ -173,7 +175,8 @@ display_property = "instance" # class, instance, name
 - Document about the default config file
 
 
-[Unreleased]: https://github.com/roosta/i3wsr/compare/v3.1.1...HEAD
+[Unreleased]: https://github.com/roosta/i3wsr/compare/v3.1.2...HEAD
+[v3.1.2]: https://github.com/roosta/i3wsr/compare/v3.1.1...v3.1.2
 [v3.1.1]: https://github.com/roosta/i3wsr/compare/v3.1.0...v3.1.1
 [v3.1.0]: https://github.com/roosta/i3wsr/compare/v3.0.0...v3.1.0
 [v3.0.0]: https://github.com/roosta/i3wsr/compare/v2.1.1...v3.0.0

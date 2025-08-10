@@ -1,4 +1,4 @@
-i3wsr - i3 workspace renamer
+i3wsr - i3/Sway workspace renamer
 ======
 
 [![Test Status](https://github.com/roosta/i3wsr/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/roosta/i3wsr/actions)
@@ -14,19 +14,6 @@ display options.
 ## Preview
 
 ![preview](https://raw.githubusercontent.com/roosta/i3wsr/main/assets/preview.gif)
-
-## Rebrand and Wayland support
-
-Now that `i3wsr` works with [Sway](https://swaywm.org/) as well as
-[I3](https://i3wm.org/), the name is a bit misleading, and could do with a
-change. Shame to lose the metrics, but it might help further discovery now that
-it supports multiple display servers.
-
-I've not thought of anything yet, but will advertise it here in the README
-before publishing anything under a new name.
-
-Development forward will focus on Sway, but backward compatibility with I3 will
-be maintained.
 
 ## Requirements
 

@@ -282,6 +282,10 @@ fn get_split_char(config: &Config) -> char {
         .unwrap_or(' ')
 }
 
+fn escape_string(s: &str) -> String {
+    s.replace('\\', "\\\\").replace('"', "\\\"")
+}
+
 fn format_workspace_name(initial: &str, titles: &str, split_at: char, config: &Config) -> String {
     let mut new = String::from(initial);
 
@@ -343,7 +347,11 @@ pub fn update_tree(
 
         // Only send command if name changed
         if old != &new {
-            let command = format!("rename workspace \"{}\" to \"{}\"", old, new);
+            let command = format!(
+                "rename workspace \"{}\" to \"{}\"",
+                escape_string(old),
+                escape_string(&new)
+            );
             if VERBOSE.load(Ordering::Relaxed) {
                 println!("{} {}", "[COMMAND]".blue(), command);
                 if let Some(output) = &workspace.output {
@@ -488,6 +496,14 @@ mod tests {
         // Test with empty string
         config.set_general("split_at".to_string(), "".to_string());
         assert_eq!(super::get_split_char(&config), ' ');
+    }
+
+    #[test]
+    fn test_escape_string() {
+        assert_eq!(super::escape_string("normal"), "normal");
+        assert_eq!(super::escape_string("quote \""), "quote \\\"");
+        assert_eq!(super::escape_string("backslash \\"), "backslash \\\\");
+        assert_eq!(super::escape_string("both \" \\"), "both \\\" \\\\");
     }
 
     #[test]

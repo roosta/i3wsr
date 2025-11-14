@@ -429,7 +429,7 @@ mod tests {
     use regex::Regex;
 
     #[test]
-    fn test_find_alias() {
+    fn test_resolve_alias() {
         let patterns = vec![
             (Regex::new(r"Firefox").unwrap(), "firefox".to_string()),
             (Regex::new(r"Chrome").unwrap(), "chrome".to_string()),
@@ -446,11 +446,11 @@ mod tests {
         // Test non-matching case
         let binding = "Safari".to_string();
         let value = Some(&binding);
-        assert_eq!(super::find_alias(value, &patterns), None);
+        assert_eq!(super::resolve_alias(value, &patterns), None);
 
         // Test None case
         let value: Option<&String> = None;
-        assert_eq!(super::find_alias(value, &patterns), None);
+        assert_eq!(super::resolve_alias(value, &patterns), None);
     }
 
     #[test]

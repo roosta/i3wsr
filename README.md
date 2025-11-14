@@ -132,6 +132,9 @@ Alias keys uses regex for matching, so it's possible to get creative:
 ```toml
 # This will match gimp regardless of version number reported in class
 "Gimp-\\d\\.\\d\\d" = "Gimp"
+
+# Capture group substitutions
+"^(.*) - Google Chrome$" = "🌐 $1"
 ```
 
 Remember to quote anything but `[a-zA-Z]`, and to escape your slashes. Due to

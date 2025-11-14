@@ -102,12 +102,14 @@ fn get_option(config: &Config, key: &str) -> bool {
     config.get_option(key).unwrap_or(false)
 }
 
-fn find_alias(value: Option<&String>, patterns: &[(regex::Regex, String)]) -> Option<String> {
+fn resolve_alias(value: Option<&String>, patterns: &[(regex::Regex, String)]) -> Option<String> {
     value.and_then(|val| {
         patterns
             .iter()
             .find(|(re, _)| re.is_match(val))
-            .map(|(_, alias)| alias.clone())
+            .map(|(re, alias_format)| {
+                re.replace(val, alias_format).into_owned()
+            })
     })
 }
 
@@ -134,9 +136,9 @@ pub fn get_title(
         // Xwayland / Xorg
         Some(props) => {
             // First try to find an alias using the window properties
-            let alias = find_alias(props.title.as_ref(), &res.name)
-                .or_else(|| find_alias(props.instance.as_ref(), &res.instance))
-                .or_else(|| find_alias(props.class.as_ref(), &res.class));
+            let alias = resolve_alias(props.title.as_ref(), &res.name)
+                .or_else(|| resolve_alias(props.instance.as_ref(), &res.instance))
+                .or_else(|| resolve_alias(props.class.as_ref(), &res.class));
 
             // If no alias found, use the configured display property
             let title = alias.or_else(|| {
@@ -157,8 +159,8 @@ pub fn get_title(
         }
         // Wayland
         None => {
-            let alias = find_alias(node.name.as_ref(), &res.name)
-                .or_else(|| find_alias(node.app_id.as_ref(), &res.app_id));
+            let alias = resolve_alias(node.name.as_ref(), &res.name)
+                .or_else(|| resolve_alias(node.app_id.as_ref(), &res.app_id));
 
             let title = alias.or_else(|| {
                 let prop_value = match display_prop.as_str() {
@@ -437,7 +439,7 @@ mod tests {
         let binding = "Firefox".to_string();
         let value = Some(&binding);
         assert_eq!(
-            super::find_alias(value, &patterns),
+            super::resolve_alias(value, &patterns),
             Some("firefox".to_string())
         );
 

@@ -110,6 +110,8 @@ Sometimes a class, instance or name can be overly verbose, use aliases that
 match to window properties to create simpler names instead of showing the full
 property
 
+> Order matters, so if you have a class that matches both "Chrome"
+> and "^(.*) - Google Chrome$", it'll use the first one.
 
 ```toml
 # For Sway
@@ -136,9 +138,6 @@ Alias keys uses regex for matching, so it's possible to get creative:
 # Capture group substitutions
 "^(.*) - Google Chrome$" = "🌐 $1"
 ```
-
-> Order matters, so if you have a class that matches both "Chrome"
-> and "^(.*) - Google Chrome$", it'll use the first one.
 
 Remember to quote anything but `[a-zA-Z]`, and to escape your slashes. Due to
 rust string escapes if you want a literal backslash use two slashes `\\d`.

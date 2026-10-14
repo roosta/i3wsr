@@ -451,6 +451,14 @@ mod tests {
             Some("firefox".to_string())
         );
 
+        // // Test substring case
+        let binding = "Mozilla Firefox".to_string();
+        let value = Some(&binding);
+        assert_eq!(
+            super::resolve_alias(value, &patterns),
+            Some("firefox".to_string())
+        );
+
         // Test non-matching case
         let binding = "Safari".to_string();
         let value = Some(&binding);

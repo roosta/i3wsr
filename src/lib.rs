@@ -443,6 +443,7 @@ mod tests {
     #[test]
     fn test_resolve_alias() {
         let patterns = vec![
+            (Regex::new(r"^(.*) - Mozilla Firefox").unwrap(), "ff - $1".to_string()),
             (Regex::new(r"Firefox").unwrap(), "firefox".to_string()),
             (Regex::new(r"Chrome").unwrap(), "chrome".to_string()),
         ];
@@ -455,12 +456,20 @@ mod tests {
             Some("firefox".to_string())
         );
 
-        // // Test substring case
+        // Test substring case
         let binding = "Mozilla Firefox".to_string();
         let value = Some(&binding);
         assert_eq!(
             super::resolve_alias(value, &patterns),
             Some("firefox".to_string())
+        );
+
+        // Test Capture group substitution
+        let binding = "i3wsr - Mozilla Firefox".to_string();
+        let value = Some(&binding);
+        assert_eq!(
+            super::resolve_alias(value, &patterns),
+            Some("ff - i3wsr".to_string())
         );
 
         // Test non-matching case

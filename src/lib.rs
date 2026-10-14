@@ -108,7 +108,11 @@ fn resolve_alias(value: Option<&String>, patterns: &[(regex::Regex, String)]) ->
             .iter()
             .find(|(re, _)| re.is_match(val))
             .map(|(re, alias_format)| {
-                re.replace(val, alias_format).into_owned()
+                if re.captures_len() > 1 && alias_format.contains('$') {
+                    re.replace(val, alias_format).into_owned()
+                } else {
+                    alias_format.clone()
+                }
             })
     })
 }

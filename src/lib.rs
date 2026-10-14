@@ -442,6 +442,7 @@ mod tests {
 
     #[test]
     fn test_resolve_alias() {
+        // Hint: order matter! for substring + capture group
         let patterns = vec![
             (Regex::new(r"^(.*) - Mozilla Firefox").unwrap(), "ff - $1".to_string()),
             (Regex::new(r"Firefox").unwrap(), "firefox".to_string()),

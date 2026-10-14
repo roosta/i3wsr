@@ -137,6 +137,9 @@ Alias keys uses regex for matching, so it's possible to get creative:
 "^(.*) - Google Chrome$" = "🌐 $1"
 ```
 
+> Order matters, so if you have a class that matches both "Chrome"
+> and "^(.*) - Google Chrome$", it'll use the first one.
+
 Remember to quote anything but `[a-zA-Z]`, and to escape your slashes. Due to
 rust string escapes if you want a literal backslash use two slashes `\\d`.
 

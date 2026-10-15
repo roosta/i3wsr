@@ -297,6 +297,17 @@ file:
 remove_duplicates = true
 ```
 
+### Factorize names/icons with subscripts
+If you want to factorize the entries with subscripts (e.g. aababa -> a₄b₂) use either the flag
+`--factorize`, or configure it in the `options` section of the config file:
+
+> set 'remove_duplicates' to false otherwise dedup runs first and factorize becomes a no-op
+
+```toml
+[options]
+factorize = true
+```
+
 ### Split at character
 
 By default i3wsr will keep everything until the first `space` character is found,

@@ -59,6 +59,7 @@
 //!
 //! [options]
 //! remove_duplicates = false # Remove duplicate window names
+//! factorize = false         # Factorize entries with subscripts (e.g. aababa -> a₄b₂)
 //! no_names = false          # Show only icons
 //! no_icon_names = false     # Show names only if no icon available
 //! focus_fix = false         # Enable experimental focus fix, see #34 for more. Ignore if you don't know you need this.
@@ -71,6 +72,7 @@
 //! - `--no-icon-names`: Show only icons when available
 //! - `--no-names`: Never show window names
 //! - `--remove-duplicates`: Remove duplicate entries
+//! - `--factorize`: Factorize entries with subscripts (e.g. aababa -> a₄b₂)
 //! - `--display-property <PROPERTY>`: Window property to use (class/app_id/instance/name)
 //! - `--split-at <CHAR>`: Character to split workspace names
 //!
@@ -199,6 +201,14 @@ struct Args {
     )]
     remove_duplicates: bool,
 
+    /// factorize titles with subscripts
+    #[arg(
+        short,
+        long,
+        help = "Factorize entries with subscripts (e.g. aababa -> a₄b₂)"
+    )]
+    factorize: bool,
+
     /// Which window property to use when no alias is found
     #[arg(
         short = 'p',
@@ -254,6 +264,7 @@ fn apply_args_to_config(config: &mut Config, args: &Args) {
         ("no_icon_names", args.no_icon_names),
         ("no_names", args.no_names),
         ("remove_duplicates", args.remove_duplicates),
+        ("factorize", args.factorize),
         ("focus_fix", args.focus_fix),
     ];
 
@@ -340,6 +351,11 @@ fn handle_event(
 fn run() -> Result<(), AppError> {
     let config = setup()?;
     let res = i3wsr_core::regex::parse_config(&config)?;
+
+    // Warn for no-op when setting factorize and remove_duplicates
+    if config.get_option("factorize").is_some() && config.get_option("remove_duplicates").is_some() {
+        eprintln!("Warning: Setting 'factorize' AND 'remove_duplicates' will result in no-op for factorize.");
+    }
 
     let mut conn = Connection::new()?;
     let subscriptions = [EventType::Window, EventType::Workspace];

@@ -110,6 +110,8 @@ Sometimes a class, instance or name can be overly verbose, use aliases that
 match to window properties to create simpler names instead of showing the full
 property
 
+> Order matters, so if you have a class that matches both "Chrome"
+> and "^(.*) - Google Chrome$", it'll use the first one.
 
 ```toml
 # For Sway

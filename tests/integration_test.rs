@@ -1,11 +1,9 @@
-use std::env;
 use std::error::Error;
 use swayipc::{Connection, Node};
 use i3wsr_core::{Config, update_tree};
 
 #[test]
 fn connection_tree() -> Result<(), Box<dyn Error>> {
-    env::set_var("DISPLAY", ":99.0");
     let mut conn = Connection::new()?;
     let config = Config::default();
     let res = i3wsr_core::regex::parse_config(&config)?;
@@ -25,7 +23,6 @@ fn connection_tree() -> Result<(), Box<dyn Error>> {
 
 #[test]
 fn get_title() -> Result<(), Box<dyn Error>> {
-    env::set_var("DISPLAY", ":99.0");
     let mut conn = swayipc::Connection::new()?;
 
     let tree = conn.get_tree()?;
@@ -58,7 +55,6 @@ fn get_title() -> Result<(), Box<dyn Error>> {
 
 #[test]
 fn collect_titles() -> Result<(), Box<dyn Error>> {
-    env::set_var("DISPLAY", ":99.0");
     let mut conn = swayipc::Connection::new()?;
     let tree = conn.get_tree()?;
     let workspaces = i3wsr_core::get_workspaces(tree);

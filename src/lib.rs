@@ -545,6 +545,31 @@ mod tests {
     }
 
     #[test]
+    fn test_factorize_subscript_format() {
+        // Test subscript count
+        assert_eq!(super::subscript_count(2), "₂".to_string());
+        assert_eq!(super::subscript_count(9), "₉".to_string());
+        assert_eq!(super::subscript_count(12), "ₓ".to_string());
+
+        // Test factorizing titles
+        let titles = vec![
+            "a".to_string(),
+            "a".to_string(),
+            "b".to_string(),
+            "a".to_string(),
+            "b".to_string(),
+        ];
+        assert_eq!(super::factorize_titles(titles), vec!["a₃".to_string(),"b₂".to_string()]);
+
+        // Test not factorizing single titles
+        let titles = vec![
+            "a".to_string(),
+            "b".to_string(),
+        ];
+        assert_eq!(super::factorize_titles(titles), vec!["a".to_string(), "b".to_string()]);
+    }
+
+    #[test]
     fn test_get_split_char() {
         let mut config = super::Config::default();
 

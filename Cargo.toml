@@ -20,8 +20,8 @@ name = "i3wsr"
 path = "src/main.rs"
 
 [dependencies]
-clap = { version = "4.5", features = ["derive"] }
-toml = "0.7"
+clap = { version = "4.6.7", features = ["derive"] }
+toml = "1.1.8"
 serde = { version = "1.0", features = ["derive"] }
 itertools = "0.13"
 regex = "1.11"

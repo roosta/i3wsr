@@ -227,6 +227,42 @@ pub fn get_workspaces(tree: Node) -> Vec<Node> {
     find_workspaces(tree, &excludes)
 }
 
+/// Renders a count in subscript digits, e.g. 4 -> "₄" (chemist notation).
+fn subscript_count(n: usize) -> String {
+    const SUBSCRIPTS: [char;10] = ['₀', '₁', '₂', '₃', '₄', '₅', '₆', '₇', '₈', '₉'];
+    // counts >= 10 render as "ₓ"
+    // which is roman numeral for 10 and
+    // also a X for to many windows/same titles
+    match n {
+        0..=9 => SUBSCRIPTS[n].to_string(),
+        _ => "ₓ".to_string(),
+    }
+}
+
+/// Factorize repeated titles with subscript counts
+/// e.g. ["a", "a", "b", "a", "b"] -> ["a₃", "b₂"]
+fn factorize_titles(titles: Vec<String>) -> Vec<String> {
+    let mut counts: Vec<(String, usize)> = Vec::new();
+    // increase counter for each appearance of title
+    for title in titles {
+        if let Some((_, count)) = counts.iter_mut().find(|(seen, _)| seen == &title) {
+            *count += 1;
+        } else {
+            counts.push((title,1));
+        }
+    }
+
+    counts.into_iter().map(|(title, count)| {
+        if count > 1 {
+            format!("{}{}", title, subscript_count(count))
+        } else {
+            title
+        }
+    })
+    .collect()
+
+}
+
 /// Collect a vector of workspace titles, recursively traversing all nested nodes
 pub fn collect_titles(workspace: &Node, config: &Config, res: &regex::Compiled) -> Vec<String> {
     fn collect_nodes<'a>(node: &'a Node, nodes: &mut Vec<&'a Node>) {
@@ -270,6 +306,10 @@ fn apply_options(titles: Vec<String>, config: &Config) -> Vec<String> {
 
     if get_option(config, "remove_duplicates") {
         processed = processed.into_iter().unique().collect();
+    }
+
+    if get_option(config, "factorize") {
+        processed = factorize_titles(processed);
     }
 
     if get_option(config, "no_names") {

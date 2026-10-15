@@ -1,9 +1,12 @@
-FROM alpine:latest AS deps
-RUN apk update && apk add rust i3wm gpick xterm cargo xvfb bash
+# syntax=docker/dockerfile:1
+FROM alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
 
-FROM alpine:latest
-COPY --from=deps /var/cache/apk /var/cache/apk
-COPY . ./app
+RUN apk add --no-cache \
+        bash cargo rust i3wm gpick xterm xvfb \
+    && adduser -D -u 1000 -h /home/tester tester
+
 WORKDIR /app
-RUN apk add --no-cache rust i3wm gpick xterm cargo xvfb bash
-CMD /app/tests/setup.sh && cargo test
+COPY --chown=tester:tester . .
+
+USER tester
+CMD ["/app/tests/run.sh"]

@@ -17,7 +17,7 @@ fn connection_tree() -> Result<(), Box<dyn Error>> {
         .map(|name| name.to_string())
         .unwrap_or_default();
 
-    assert_eq!(name, String::from("1 Gpick | XTerm"));
+    assert_eq!(name, String::from("1 Emacs | XTerm"));
     Ok(())
 }
 
@@ -49,7 +49,7 @@ fn get_title() -> Result<(), Box<dyn Error>> {
         .iter()
         .map(|node| i3wsr_core::get_title(node, &config, &res))
         .collect();
-    assert_eq!(result?, vec!["Gpick", "XTerm"]);
+    assert_eq!(result?, vec!["Emacs", "XTerm"]);
     Ok(())
 }
 
@@ -64,7 +64,7 @@ fn collect_titles() -> Result<(), Box<dyn Error>> {
     for workspace in workspaces {
         result.push(i3wsr_core::collect_titles(&workspace, &config, &res));
     }
-    let expected = vec![vec!["Gpick", "XTerm"]];
+    let expected = vec![vec!["Emacs", "XTerm"]];
     assert_eq!(result, expected);
     Ok(())
 }

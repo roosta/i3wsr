@@ -553,27 +553,31 @@ mod tests {
 
     #[test]
     fn test_factorize_subscript_format() {
-        // Test subscript count
-        assert_eq!(super::subscript_count(2), "₂".to_string());
-        assert_eq!(super::subscript_count(9), "₉".to_string());
-        assert_eq!(super::subscript_count(12), "ₓ".to_string());
+        // Test count format notation
+        assert_eq!(super::format_count(2, "chemist"), "₂".to_string());
+        assert_eq!(super::format_count(9, "mathematical"), "⁹".to_string());
+        assert_eq!(super::format_count(12, "chemist"), "ₓ".to_string());
+        assert_eq!(super::format_count(2, "chmist"), "₂".to_string());
 
         // Test factorizing titles
-        let titles = vec![
+        let test_titles = vec![
             "a".to_string(),
             "a".to_string(),
             "b".to_string(),
             "a".to_string(),
             "b".to_string(),
         ];
-        assert_eq!(super::factorize_titles(titles), vec!["a₃".to_string(),"b₂".to_string()]);
+        assert_eq!(super::factorize_titles(test_titles.clone(), &"chemist"), vec!["a₃".to_string(),"b₂".to_string()]);
+
+        // Test factorizing titles with option other factorize_type
+        assert_eq!(super::factorize_titles(test_titles.clone(), &"mathematical"), vec!["a³".to_string(),"b²".to_string()]);
 
         // Test not factorizing single titles
         let titles = vec![
             "a".to_string(),
             "b".to_string(),
         ];
-        assert_eq!(super::factorize_titles(titles), vec!["a".to_string(), "b".to_string()]);
+        assert_eq!(super::factorize_titles(titles, &"chemist"), vec!["a".to_string(), "b".to_string()]);
     }
 
     #[test]

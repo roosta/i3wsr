@@ -30,11 +30,13 @@ TelegramDesktop = "Telegram"
 separator = "  "
 split_at = ":"
 empty_label = "🌕"
+factorize_notation = "chemist"
 display_property = "instance" # class, instance, name
 default_icon = ""
 
 [options]
 remove_duplicates = false
+factorize = false
 no_names = false
 no_icon_names = false
 focus_fix = false

@@ -227,21 +227,25 @@ pub fn get_workspaces(tree: Node) -> Vec<Node> {
     find_workspaces(tree, &excludes)
 }
 
-/// Renders a count in subscript digits, e.g. 4 -> "₄" (chemist notation).
-fn subscript_count(n: usize) -> String {
-    const SUBSCRIPTS: [char;10] = ['₀', '₁', '₂', '₃', '₄', '₅', '₆', '₇', '₈', '₉'];
+/// /// Renders a count as subscript (chemist, a₄) or superscript (mathematical, a⁴) digits.
+fn format_count(n: usize, notation: &str) -> String {
+    let digits: [char; 10] = match notation {
+        "mathematical" => ['⁰', '¹', '²', '³', '⁴', '⁵', '⁶', '⁷', '⁸', '⁹'],
+        // defaults to chemist notation
+        _ => ['₀', '₁', '₂', '₃', '₄', '₅', '₆', '₇', '₈', '₉'],
+    };
     // counts >= 10 render as "ₓ"
     // which is roman numeral for 10 and
     // also a X for to many windows/same titles
     match n {
-        0..=9 => SUBSCRIPTS[n].to_string(),
+        0..=9 => digits[n].to_string(),
         _ => "ₓ".to_string(),
     }
 }
 
 /// Factorize repeated titles with subscript counts
 /// e.g. ["a", "a", "b", "a", "b"] -> ["a₃", "b₂"]
-fn factorize_titles(titles: Vec<String>) -> Vec<String> {
+fn factorize_titles(titles: Vec<String>, notation: &str) -> Vec<String> {
     let mut counts: Vec<(String, usize)> = Vec::new();
     // increase counter for each appearance of title
     for title in titles {
@@ -254,7 +258,7 @@ fn factorize_titles(titles: Vec<String>) -> Vec<String> {
 
     counts.into_iter().map(|(title, count)| {
         if count > 1 {
-            format!("{}{}", title, subscript_count(count))
+            format!("{}{}", title, format_count(count, notation))
         } else {
             title
         }
@@ -309,7 +313,10 @@ fn apply_options(titles: Vec<String>, config: &Config) -> Vec<String> {
     }
 
     if get_option(config, "factorize") {
-        processed = factorize_titles(processed);
+        let notation = config
+            .get_general("factorize_notation")
+            .unwrap_or_else(|| "chemist".to_string());
+        processed = factorize_titles(processed, &notation) ;
     }
 
     if get_option(config, "no_names") {

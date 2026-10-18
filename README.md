@@ -298,7 +298,7 @@ remove_duplicates = true
 ```
 
 ### Factorize names/icons
-If you want to factorize the entries with subscripts (e.g. aababa -> a₄b₂) use either the flag
+If you want to factorize the entries (e.g. aababa -> a₄b₂) use either the flag
 `--factorize`, or configure it in the `options` section of the config file:
 
 > set 'remove_duplicates' to false otherwise dedup runs first and factorize becomes a no-op

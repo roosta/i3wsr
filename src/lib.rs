@@ -243,7 +243,7 @@ fn format_count(n: usize, notation: &str) -> String {
     }
 }
 
-/// Factorize repeated titles with subscript counts
+/// Factorize repeated titles with different notation counts
 /// e.g. ["a", "a", "b", "a", "b"] -> ["a₃", "b₂"]
 fn factorize_titles(titles: Vec<String>, notation: &str) -> Vec<String> {
     let mut counts: Vec<(String, usize)> = Vec::new();

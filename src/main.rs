@@ -60,7 +60,7 @@
 //!
 //! [options]
 //! remove_duplicates = false # Remove duplicate window names
-//! factorize = false         # Factorize entries with subscripts (e.g. aababa -> a₄b₂)
+//! factorize = false         # Factorize entries with configured notation (e.g. aababa -> a₄b₂)
 //! no_names = false          # Show only icons
 //! no_icon_names = false     # Show names only if no icon available
 //! focus_fix = false         # Enable experimental focus fix, see #34 for more. Ignore if you don't know you need this.
@@ -73,7 +73,7 @@
 //! - `--no-icon-names`: Show only icons when available
 //! - `--no-names`: Never show window names
 //! - `--remove-duplicates`: Remove duplicate entries
-//! - `--factorize`: Factorize entries with subscripts (e.g. aababa -> a₄b₂)
+//! - `--factorize`: Factorize entries with configured notation (e.g. aababa -> a₄b₂)
 //! - `--factorize-notation <NOTATION>`: Digit style for factorize counts: chemist (a₃) or mathematical (a⁴)
 //! - `--display-property <PROPERTY>`: Window property to use (class/app_id/instance/name)
 //! - `--split-at <CHAR>`: Character to split workspace names
@@ -203,11 +203,11 @@ struct Args {
     )]
     remove_duplicates: bool,
 
-    /// factorize titles with subscripts
+    /// factorize titles with notation
     #[arg(
         short,
         long,
-        help = "Factorize entries with subscripts (e.g. aababa -> a₄b₂)"
+        help = "Factorize entries with configured notation (e.g. aababa -> a₄b₂)"
     )]
     factorize: bool,
 

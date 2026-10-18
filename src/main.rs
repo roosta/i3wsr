@@ -74,6 +74,7 @@
 //! - `--no-names`: Never show window names
 //! - `--remove-duplicates`: Remove duplicate entries
 //! - `--factorize`: Factorize entries with subscripts (e.g. aababa -> a₄b₂)
+//! - `--factorize-notation <NOTATION>`: Digit style for factorize counts: chemist (a₃) or mathematical (a⁴)
 //! - `--display-property <PROPERTY>`: Window property to use (class/app_id/instance/name)
 //! - `--split-at <CHAR>`: Character to split workspace names
 //!
@@ -296,10 +297,10 @@ fn apply_args_to_config(config: &mut Config, args: &Args) {
             display_property.as_str().to_string(),
         );
     }
-    if let Some(split_char) = &args.factorize_notation {
+    if let Some(notation) = &args.factorize_notation {
         config
             .general
-            .insert("factorize_notation".to_string(), split_char.clone());
+            .insert("factorize_notation".to_string(), notation.clone());
     }
 }
 

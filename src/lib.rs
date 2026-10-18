@@ -227,7 +227,7 @@ pub fn get_workspaces(tree: Node) -> Vec<Node> {
     find_workspaces(tree, &excludes)
 }
 
-/// /// Renders a count as subscript (chemist, a₄) or superscript (mathematical, a⁴) digits.
+/// Renders a count as subscript (chemist, a₄) or superscript (mathematical, a⁴) digits.
 fn format_count(n: usize, notation: &str) -> String {
     let digits: [char; 10] = match notation {
         "mathematical" => ['⁰', '¹', '²', '³', '⁴', '⁵', '⁶', '⁷', '⁸', '⁹'],
@@ -561,11 +561,12 @@ mod tests {
     }
 
     #[test]
-    fn test_factorize_subscript_format() {
+    fn test_factorize_notation_format() {
         // Test count format notation
         assert_eq!(super::format_count(2, "chemist"), "₂".to_string());
         assert_eq!(super::format_count(9, "mathematical"), "⁹".to_string());
         assert_eq!(super::format_count(12, "chemist"), "ₓ".to_string());
+        // unknown notation (e.g. tpyo) falls back to chemist
         assert_eq!(super::format_count(2, "chmist"), "₂".to_string());
 
         // Test factorizing titles

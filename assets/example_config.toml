@@ -30,7 +30,7 @@ TelegramDesktop = "Telegram"
 separator = "  "
 split_at = ":"
 empty_label = "🌕"
-factorize_notation = "chemist"
+factorize_notation = "chemist" # chemist (a₃) or mathematical (a⁴)
 display_property = "instance" # class, instance, name
 default_icon = ""
 

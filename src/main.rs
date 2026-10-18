@@ -373,7 +373,8 @@ fn run() -> Result<(), AppError> {
     let res = i3wsr_core::regex::parse_config(&config)?;
 
     // Warn for no-op when setting factorize and remove_duplicates
-    if config.get_option("factorize").is_some() && config.get_option("remove_duplicates").is_some()
+    if config.get_option("factorize").unwrap_or(false)
+        && config.get_option("remove_duplicates").unwrap_or(false)
     {
         eprintln!("Warning: Setting 'factorize' AND 'remove_duplicates' will result in no-op for factorize.");
     }

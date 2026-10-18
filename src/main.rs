@@ -215,7 +215,9 @@ struct Args {
     #[arg(
         short = 'd',
         long,
-        help = "Notation for factorize count digits: chemist (a₃) or mathematical (a⁴)"
+        value_parser = ["chemist", "mathematical"],
+        help = "Notation for factorize count digits (a₃ / a⁴)",
+        value_name = "NOTATION",
     )]
     factorize_notation: Option<String>,
 

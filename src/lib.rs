@@ -252,19 +252,20 @@ fn factorize_titles(titles: Vec<String>, notation: &str) -> Vec<String> {
         if let Some((_, count)) = counts.iter_mut().find(|(seen, _)| seen == &title) {
             *count += 1;
         } else {
-            counts.push((title,1));
+            counts.push((title, 1));
         }
     }
 
-    counts.into_iter().map(|(title, count)| {
-        if count > 1 {
-            format!("{}{}", title, format_count(count, notation))
-        } else {
-            title
-        }
-    })
-    .collect()
-
+    counts
+        .into_iter()
+        .map(|(title, count)| {
+            if count > 1 {
+                format!("{}{}", title, format_count(count, notation))
+            } else {
+                title
+            }
+        })
+        .collect()
 }
 
 /// Collect a vector of workspace titles, recursively traversing all nested nodes
@@ -316,7 +317,7 @@ fn apply_options(titles: Vec<String>, config: &Config) -> Vec<String> {
         let notation = config
             .get_general("factorize_notation")
             .unwrap_or_else(|| "chemist".to_string());
-        processed = factorize_titles(processed, &notation) ;
+        processed = factorize_titles(processed, &notation);
     }
 
     if get_option(config, "no_names") {
@@ -475,8 +476,13 @@ pub fn handle_ws_event(
 
     match e.change {
         WorkspaceChange::Empty | WorkspaceChange::Focus => {
-            update_tree(conn, config, res, e.change == WorkspaceChange::Focus && focus_fix)
-                .map_err(|e| AppError::Event(format!("Tree update failed: {}", e)))?;
+            update_tree(
+                conn,
+                config,
+                res,
+                e.change == WorkspaceChange::Focus && focus_fix,
+            )
+            .map_err(|e| AppError::Event(format!("Tree update failed: {}", e)))?;
         }
         _ => (),
     }
@@ -491,7 +497,10 @@ mod tests {
     fn test_resolve_alias() {
         // Hint: order matter! for substring + capture group
         let patterns = vec![
-            (Regex::new(r"^(.*) - Mozilla Firefox").unwrap(), "ff - $1".to_string()),
+            (
+                Regex::new(r"^(.*) - Mozilla Firefox").unwrap(),
+                "ff - $1".to_string(),
+            ),
             (Regex::new(r"Firefox").unwrap(), "firefox".to_string()),
             (Regex::new(r"Chrome").unwrap(), "chrome".to_string()),
         ];
@@ -567,17 +576,23 @@ mod tests {
             "a".to_string(),
             "b".to_string(),
         ];
-        assert_eq!(super::factorize_titles(test_titles.clone(), "chemist"), vec!["a₃".to_string(),"b₂".to_string()]);
+        assert_eq!(
+            super::factorize_titles(test_titles.clone(), "chemist"),
+            vec!["a₃".to_string(), "b₂".to_string()]
+        );
 
         // Test factorizing titles with option other factorize notation
-        assert_eq!(super::factorize_titles(test_titles.clone(), "mathematical"), vec!["a³".to_string(),"b²".to_string()]);
+        assert_eq!(
+            super::factorize_titles(test_titles.clone(), "mathematical"),
+            vec!["a³".to_string(), "b²".to_string()]
+        );
 
         // Test not factorizing single titles
-        let titles = vec![
-            "a".to_string(),
-            "b".to_string(),
-        ];
-        assert_eq!(super::factorize_titles(titles, "chemist"), vec!["a".to_string(), "b".to_string()]);
+        let titles = vec!["a".to_string(), "b".to_string()];
+        assert_eq!(
+            super::factorize_titles(titles, "chemist"),
+            vec!["a".to_string(), "b".to_string()]
+        );
     }
 
     #[test]

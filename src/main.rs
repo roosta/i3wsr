@@ -101,10 +101,10 @@
 use clap::{Parser, ValueEnum};
 use dirs::config_dir;
 use i3wsr_core::config::{Config, ConfigError};
+use std::env;
 use std::io;
 use std::path::Path;
 use swayipc::{Connection, Event, EventType, Fallible, WorkspaceChange};
-use std::env;
 
 use i3wsr_core::AppError;
 
@@ -121,7 +121,7 @@ enum Properties {
     Class,
     Instance,
     Name,
-    AppId
+    AppId,
 }
 
 impl Properties {
@@ -214,7 +214,7 @@ struct Args {
     #[arg(
         short = 'd',
         long,
-        help = "Notation for factorize count digits: chemist (a₃) or mathematical (a⁴)",
+        help = "Notation for factorize count digits: chemist (a₃) or mathematical (a⁴)"
     )]
     factorize_notation: Option<String>,
 
@@ -291,9 +291,10 @@ fn apply_args_to_config(config: &mut Config, args: &Args) {
     }
 
     if let Some(display_property) = &args.display_property {
-        config
-            .general
-            .insert("display_property".to_string(), display_property.as_str().to_string());
+        config.general.insert(
+            "display_property".to_string(),
+            display_property.as_str().to_string(),
+        );
     }
     if let Some(split_char) = &args.factorize_notation {
         config
@@ -350,7 +351,9 @@ fn handle_event(
             // Check if it's an UnexpectedEof error (common when i3/sway restarts)
             if let swayipc::Error::Io(io_err) = &e {
                 if io_err.kind() == std::io::ErrorKind::UnexpectedEof {
-                    return Err(AppError::Abort("Window manager connection lost (EOF), shutting down...".to_string()));
+                    return Err(AppError::Abort(
+                        "Window manager connection lost (EOF), shutting down...".to_string(),
+                    ));
                 }
             }
             return Err(AppError::Event(format!("IPC event error: {}", e)));
@@ -367,7 +370,8 @@ fn run() -> Result<(), AppError> {
     let res = i3wsr_core::regex::parse_config(&config)?;
 
     // Warn for no-op when setting factorize and remove_duplicates
-    if config.get_option("factorize").is_some() && config.get_option("remove_duplicates").is_some() {
+    if config.get_option("factorize").is_some() && config.get_option("remove_duplicates").is_some()
+    {
         eprintln!("Warning: Setting 'factorize' AND 'remove_duplicates' will result in no-op for factorize.");
     }
 

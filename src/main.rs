@@ -52,10 +52,11 @@
 //! ".*mutt$" = "Mail"
 //!
 //! [general]
-//! separator = " | "          # Separator between window names
-//! split_at = ":"             # Character to split workspace number
-//! empty_label = "🌕"         # Label for empty workspaces
-//! display_property = "class" # Default property to display (class/app_id/instance/name)
+//! separator = " | "              # Separator between window names
+//! split_at = ":"                 # Character to split workspace number
+//! empty_label = "🌕"             # Label for empty workspaces
+//! factorize_notation = "chemist" # Digit style for factorize counts: chemist (a₃) or mathematical (a⁴)
+//! display_property = "class"     # Default property to display (class/app_id/instance/name)
 //!
 //! [options]
 //! remove_duplicates = false # Remove duplicate window names
@@ -209,6 +210,14 @@ struct Args {
     )]
     factorize: bool,
 
+    /// notation for factorize
+    #[arg(
+        short = 'd',
+        long,
+        help = "Notation for factorize count digits: chemist (a₃) or mathematical (a⁴)",
+    )]
+    factorize_notation: Option<String>,
+
     /// Which window property to use when no alias is found
     #[arg(
         short = 'p',
@@ -285,6 +294,11 @@ fn apply_args_to_config(config: &mut Config, args: &Args) {
         config
             .general
             .insert("display_property".to_string(), display_property.as_str().to_string());
+    }
+    if let Some(split_char) = &args.factorize_notation {
+        config
+            .general
+            .insert("factorize_notation".to_string(), split_char.clone());
     }
 }
 

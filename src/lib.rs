@@ -567,17 +567,17 @@ mod tests {
             "a".to_string(),
             "b".to_string(),
         ];
-        assert_eq!(super::factorize_titles(test_titles.clone(), &"chemist"), vec!["a₃".to_string(),"b₂".to_string()]);
+        assert_eq!(super::factorize_titles(test_titles.clone(), "chemist"), vec!["a₃".to_string(),"b₂".to_string()]);
 
-        // Test factorizing titles with option other factorize_type
-        assert_eq!(super::factorize_titles(test_titles.clone(), &"mathematical"), vec!["a³".to_string(),"b²".to_string()]);
+        // Test factorizing titles with option other factorize notation
+        assert_eq!(super::factorize_titles(test_titles.clone(), "mathematical"), vec!["a³".to_string(),"b²".to_string()]);
 
         // Test not factorizing single titles
         let titles = vec![
             "a".to_string(),
             "b".to_string(),
         ];
-        assert_eq!(super::factorize_titles(titles, &"chemist"), vec!["a".to_string(), "b".to_string()]);
+        assert_eq!(super::factorize_titles(titles, "chemist"), vec!["a".to_string(), "b".to_string()]);
     }
 
     #[test]

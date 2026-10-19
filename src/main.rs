@@ -52,13 +52,15 @@
 //! ".*mutt$" = "Mail"
 //!
 //! [general]
-//! separator = " | "          # Separator between window names
-//! split_at = ":"             # Character to split workspace number
-//! empty_label = "🌕"         # Label for empty workspaces
-//! display_property = "class" # Default property to display (class/app_id/instance/name)
+//! separator = " | "              # Separator between window names
+//! split_at = ":"                 # Character to split workspace number
+//! empty_label = "🌕"             # Label for empty workspaces
+//! factorize_notation = "chemist" # Digit style for factorize counts: chemist (a₃) or mathematical (a⁴)
+//! display_property = "class"     # Default property to display (class/app_id/instance/name)
 //!
 //! [options]
 //! remove_duplicates = false # Remove duplicate window names
+//! factorize = false         # Factorize entries with configured notation (e.g. aababa -> a₄b₂)
 //! no_names = false          # Show only icons
 //! no_icon_names = false     # Show names only if no icon available
 //! focus_fix = false         # Enable experimental focus fix, see #34 for more. Ignore if you don't know you need this.
@@ -71,6 +73,8 @@
 //! - `--no-icon-names`: Show only icons when available
 //! - `--no-names`: Never show window names
 //! - `--remove-duplicates`: Remove duplicate entries
+//! - `--factorize`: Factorize entries with configured notation (e.g. aababa -> a₄b₂)
+//! - `--factorize-notation <NOTATION>`: Digit style for factorize counts: chemist (a₃) or mathematical (a⁴)
 //! - `--display-property <PROPERTY>`: Window property to use (class/app_id/instance/name)
 //! - `--split-at <CHAR>`: Character to split workspace names
 //!
@@ -98,10 +102,10 @@
 use clap::{Parser, ValueEnum};
 use dirs::config_dir;
 use i3wsr_core::config::{Config, ConfigError};
+use std::env;
 use std::io;
 use std::path::Path;
 use swayipc::{Connection, Event, EventType, Fallible, WorkspaceChange};
-use std::env;
 
 use i3wsr_core::AppError;
 
@@ -118,7 +122,7 @@ enum Properties {
     Class,
     Instance,
     Name,
-    AppId
+    AppId,
 }
 
 impl Properties {
@@ -199,6 +203,24 @@ struct Args {
     )]
     remove_duplicates: bool,
 
+    /// factorize titles with notation
+    #[arg(
+        short,
+        long,
+        help = "Factorize entries with configured notation (e.g. aababa -> a₄b₂)"
+    )]
+    factorize: bool,
+
+    /// notation for factorize
+    #[arg(
+        short = 'd',
+        long,
+        value_parser = ["chemist", "mathematical"],
+        help = "Notation for factorize count digits (a₃ / a⁴)",
+        value_name = "NOTATION",
+    )]
+    factorize_notation: Option<String>,
+
     /// Which window property to use when no alias is found
     #[arg(
         short = 'p',
@@ -254,6 +276,7 @@ fn apply_args_to_config(config: &mut Config, args: &Args) {
         ("no_icon_names", args.no_icon_names),
         ("no_names", args.no_names),
         ("remove_duplicates", args.remove_duplicates),
+        ("factorize", args.factorize),
         ("focus_fix", args.focus_fix),
     ];
 
@@ -271,9 +294,15 @@ fn apply_args_to_config(config: &mut Config, args: &Args) {
     }
 
     if let Some(display_property) = &args.display_property {
+        config.general.insert(
+            "display_property".to_string(),
+            display_property.as_str().to_string(),
+        );
+    }
+    if let Some(notation) = &args.factorize_notation {
         config
             .general
-            .insert("display_property".to_string(), display_property.as_str().to_string());
+            .insert("factorize_notation".to_string(), notation.clone());
     }
 }
 
@@ -325,7 +354,9 @@ fn handle_event(
             // Check if it's an UnexpectedEof error (common when i3/sway restarts)
             if let swayipc::Error::Io(io_err) = &e {
                 if io_err.kind() == std::io::ErrorKind::UnexpectedEof {
-                    return Err(AppError::Abort("Window manager connection lost (EOF), shutting down...".to_string()));
+                    return Err(AppError::Abort(
+                        "Window manager connection lost (EOF), shutting down...".to_string(),
+                    ));
                 }
             }
             return Err(AppError::Event(format!("IPC event error: {}", e)));
@@ -340,6 +371,13 @@ fn handle_event(
 fn run() -> Result<(), AppError> {
     let config = setup()?;
     let res = i3wsr_core::regex::parse_config(&config)?;
+
+    // Warn for no-op when setting factorize and remove_duplicates
+    if config.get_option("factorize").unwrap_or(false)
+        && config.get_option("remove_duplicates").unwrap_or(false)
+    {
+        eprintln!("Warning: Setting 'factorize' AND 'remove_duplicates' will result in no-op for factorize.");
+    }
 
     let mut conn = Connection::new()?;
     let subscriptions = [EventType::Window, EventType::Workspace];

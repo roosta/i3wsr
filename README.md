@@ -297,6 +297,36 @@ file:
 remove_duplicates = true
 ```
 
+### Factorize names/icons
+If you want to factorize the entries (e.g. aababa -> a₄b₂) use either the flag
+`--factorize`, or configure it in the `options` section of the config file:
+
+> set 'remove_duplicates' to false otherwise dedup runs first and factorize becomes a no-op
+
+```toml
+[options]
+factorize = true
+```
+
+By default the counts are written as subscripts (a₄), which is chemist notation.
+To use superscript digits instead (a³), use either the flag
+`--factorize-notation mathematical` or set `factorize_notation` to `mathematical` in the `general`
+section:
+
+```toml
+[general]
+factorize_notation = "mathematical"
+```
+
+The only other value is `chemist`, which is the default. Unknown values fall back to
+`chemist`. Counts of ten or more always render as `ₓ`.
+
+The same workspace in both notations:
+
+| `chemist` (default) | `mathematical` |
+|---|---|
+| ![Workspace with 2 Firefox, 3 Terminals, 1 Neovim](https://raw.githubusercontent.com/roosta/i3wsr/main/assets/factorize_chemist_notation.png) | ![Workspace with 2 Firefox, 3 Terminals, 1 Neovim](https://raw.githubusercontent.com/roosta/i3wsr/main/assets/factorize_mathematical_notation.png) |
+
 ### Split at character
 
 By default i3wsr will keep everything until the first `space` character is found,
